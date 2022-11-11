@@ -1,0 +1,17 @@
+# get target url from job
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
+
+select distinct ?targetUrl WHERE {
+
+    ?tasks <http://purl.org/dc/terms/isPartOf> <${job}>;
+           <http://redpencil.data.gift/vocabularies/tasks/operation> <http://lblod.data.gift/id/jobs/concept/TaskOperation/collecting>;
+           <http://www.w3.org/ns/adms#status> <http://redpencil.data.gift/id/concept/JobStatus/success>.
+    ?tasks <http://redpencil.data.gift/vocabularies/tasks/resultsContainer> ?dataContainer.
+    ?dataContainer <http://redpencil.data.gift/vocabularies/tasks/hasFile> ?remoteDataObject.
+    ?remoteDataObject <http://purl.org/dc/terms/created> ?dataObjectCreated.
+    ?remoteDataObject <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#url> ?targetUrl.
+} order by ?dataObjectCreated  limit 1

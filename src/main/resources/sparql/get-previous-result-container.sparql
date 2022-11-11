@@ -1,0 +1,37 @@
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
+
+select distinct ?path where {
+
+	  ?job a <http://vocab.deri.ie/cogs#Job>;
+	       <http://www.w3.org/ns/adms#status> <http://redpencil.data.gift/id/concept/JobStatus/success>.
+
+
+	  ?taskCollecting <http://purl.org/dc/terms/isPartOf> ?job;
+		 <http://redpencil.data.gift/vocabularies/tasks/operation> <http://lblod.data.gift/id/jobs/concept/TaskOperation/collecting>;
+		 <http://www.w3.org/ns/adms#status> <http://redpencil.data.gift/id/concept/JobStatus/success>;
+	         <http://redpencil.data.gift/vocabularies/tasks/resultsContainer> ?dataContainer.
+	 
+          ?dataContainer <http://redpencil.data.gift/vocabularies/tasks/hasFile> ?remoteDataObject.
+          
+	  ?remoteDataObject <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#url> ?targetUrl;
+	                    <http://www.w3.org/ns/adms#status> <http://lblod.data.gift/file-download-statuses/collected>.
+	  
+	  
+	  ?taskMirroring <http://purl.org/dc/terms/isPartOf> ?job;
+	     <http://redpencil.data.gift/vocabularies/tasks/operation> <http://lblod.data.gift/id/jobs/concept/TaskOperation/mirroring>;
+	         <http://www.w3.org/ns/adms#status> <http://redpencil.data.gift/id/concept/JobStatus/success>;
+	         
+	         <http://redpencil.data.gift/vocabularies/tasks/resultsContainer> ?resultContainer.
+	         ?resultContainer <http://redpencil.data.gift/vocabularies/tasks/hasFile> ?file.
+			 ?path <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#dataSource> ?file.
+	         
+    ?remoteDataObject <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#url> ?targetUrl.
+	         
+         filter(?targetUrl = <${targetUrl}>)
+
+	} 
+	

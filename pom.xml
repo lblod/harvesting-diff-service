@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.7.5</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>lblod.info</groupId>
+	<artifactId>dataset-diff</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>dataset-diff</name>
+	<description>Takes two datasets and returns only the difference </description>
+	<properties>
+		<java.version>17</java.version>
+		<mu-java.version>1.0.20</mu-java.version>
+	</properties>
+	<scm>
+		<connection>
+		  scm:git:git@github.com:lblod/dataset-diff.git
+		</connection>
+		<tag>HEAD</tag>
+	  </scm>
+	<repositories>
+		<repository>
+		  <id>github-public</id>
+		  <url>https://maven.pkg.github.com/lblod/*</url>
+		  <snapshots>
+			<enabled>true</enabled>
+		  </snapshots>
+		</repository>
+	  </repositories>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>mu.semte.ch</groupId>
+			<artifactId>mu-java</artifactId>
+			<version>${mu-java.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.projectlombok</groupId>
+					<artifactId>lombok</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-web</artifactId>
+				</exclusion>
+			</exclusions>
+		  </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+		  <plugin>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-maven-plugin</artifactId>
+			<configuration>
+			  <finalName>harvesting-validator</finalName>
+			  <excludes>
+				<exclude>
+				  <groupId>org.projectlombok</groupId>
+				  <artifactId>lombok</artifactId>
+				</exclude>
+			  </excludes>
+			</configuration>
+		  </plugin>
+		  <plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-compiler-plugin</artifactId>
+			<configuration>
+			  <source>${java.version}</source>
+			  <target>${java.version}</target>
+			</configuration>
+		  </plugin>
+		</plugins>
+	  </build>
+
+</project>

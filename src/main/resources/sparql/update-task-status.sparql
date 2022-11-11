@@ -1,0 +1,24 @@
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX adms: <http://www.w3.org/ns/adms#>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+DELETE {
+  GRAPH ?g {
+    ?subject adms:status ?status .
+    ?subject dct:modified ?modified.
+  }
+}
+INSERT {
+  GRAPH ?g {
+   ?subject adms:status <%s>.
+   ?subject dct:modified "%s"^^xsd:dateTime.
+  }
+}
+WHERE {
+  GRAPH ?g {
+    BIND(<%s> as ?subject)
+    ?subject adms:status ?status .
+    OPTIONAL { ?subject dct:modified ?modified. }
+  }
+}

@@ -1,0 +1,26 @@
+PREFIX harvesting: <http://lblod.data.gift/vocabularies/harvesting/>
+PREFIX terms: <http://purl.org/dc/terms/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX oslc: <http://open-services.net/ns/core#>
+PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX adms: <http://www.w3.org/ns/adms#>
+
+SELECT DISTINCT ?graph ?task ?id ?job ?created ?modified ?status ?index ?operation ?error WHERE {
+      GRAPH ?graph {
+            BIND(<%s> as ?task)
+            ?task a task:Task.
+            ?task dct:isPartOf ?job;
+                      mu:uuid ?id;
+                      dct:created ?created;
+                      dct:modified ?modified;
+                      adms:status ?status;
+                      task:index ?index;
+                      task:operation ?operation.
+                      OPTIONAL { ?task task:error ?error. }
+      }
+}

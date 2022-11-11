@@ -1,0 +1,12 @@
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+INSERT DATA {
+    GRAPH <${task.graph}> {
+        <${containerUri}> a nfo:DataContainer.
+        <${containerUri}> mu:uuid "${containerId}".
+        <${containerUri}> task:hasFile <${fileUri}>.
+        <${task.task}> task:resultsContainer <${containerUri}>.
+    }
+}
