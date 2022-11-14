@@ -1,6 +1,30 @@
-# Harvesting diff
+# [HARVESTING-SELF-SERVICE]: Validation Task
+Validate and filter based on a single shacl application profile.
 
-- add the rule:
+- React to delta
+- Validate the graph fetched from the input container
+- Filter the errored triples 
+- Generate a https://www.w3.org/ns/shacl#ValidationReport
+
+## Setup using docker-compose
+
+- Add the service to your docker-compose:
+
+```yml
+  dataset-diff:
+    image: lblod/harvesting-dataset-diff
+    environment:
+      TARGET_GRAPH: "http://mu.semte.ch/graphs/harvesting"
+    volumes:
+      - ./data/files:/share
+    labels:
+      - "logging=true"
+    restart: always
+    logging: *default-logging
+
+```
+
+- add delta rule:
 
 ```js
 {
@@ -27,30 +51,25 @@
   }
 ```
 
+- add job controller config step:
 
-Add step:
 
-```
+```js
       {
         "currentOperation": "http://lblod.data.gift/id/jobs/concept/TaskOperation/diff",
         "nextOperation": "http://lblod.data.gift/id/jobs/concept/TaskOperation/publishHarvestedTriples",
         "nextIndex": "6"
-      },
+      }
 
 ```
 
+## Environment variables
 
-Add container:
-
-```yaml
-  harvesting-diff:
-    build: /home/nbittich/lblod/dataset-diff/.
-    environment:
-      TARGET_GRAPH: "http://mu.semte.ch/graphs/harvesting"
-    volumes:
-      - ./data/files:/share
-    labels:
-      - "logging=true"
-    restart: always
-    logging: *default-logging
-```
+- `SERVER_PORT` : default set to `80`
+- `SHARE_FOLDER_DIRECTORY`: default set to `/share`
+- `BATCH_SIZE` : default set to `100`
+- `LOGGING_LEVEL` : default set to `INFO`
+- `SPARQL_ENDPOINT` : default set to `http://database:8890/sparql`
+- `MAX_REQUEST_SIZE` : default set to `512MB`
+- `MAX_FILE_SIZE` : default set to `512MB`
+- `TARGET_GRAPH` : default set to `http://mu.semte.ch/application`
