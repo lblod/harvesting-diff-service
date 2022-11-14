@@ -1,10 +1,12 @@
-# [HARVESTING-SELF-SERVICE]: Validation Task
-Validate and filter based on a single shacl application profile.
+# [HARVESTING-DATASET-DIFF]: Filter triples already published
 
-- React to delta
-- Validate the graph fetched from the input container
-- Filter the errored triples 
-- Generate a https://www.w3.org/ns/shacl#ValidationReport
+Look at previous completed jobs and check if the target url for the ongoing job is equivalent.
+If so, build a model of all previously completed jobs from the result files of the mirroring step,
+and compare it to the model of the result files for this ongoing job.
+
+Generate a result graph with only the new triples, and an intersection file with all  triples that were
+previously harvested. 
+
 
 ## Setup using docker-compose
 
