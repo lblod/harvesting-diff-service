@@ -1,0 +1,9 @@
+pipeline:
+  build:
+    image: plugins/docker
+    settings:
+      repo: lblod/harvesting-diff-service
+      dry_run: true
+when:
+  event:
+    - pull_request

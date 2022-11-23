@@ -1,0 +1,10 @@
+pipeline:
+  build:
+    image: plugins/docker
+    settings:
+      repo: lblod/harvesting-diff-service
+      tags: latest
+    secrets: [ docker_username, docker_password ]
+when:
+  branch: master
+  event: push
