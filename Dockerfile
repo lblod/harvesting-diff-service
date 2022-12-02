@@ -15,7 +15,7 @@ COPY ./src ./src
 
 RUN mvn package -DskipTests
 
-FROM eclipse-temurin:18-jre
+FROM openjdk:18
 
 WORKDIR /app
 
