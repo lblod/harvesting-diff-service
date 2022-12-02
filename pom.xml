@@ -19,7 +19,7 @@
 	</properties>
 	<scm>
 		<connection>
-		  scm:git:git@github.com:lblod/dataset-diff.git
+		  scm:git:git@github.com:lblod/harvesting-diff-service.git
 		</connection>
 		<tag>HEAD</tag>
 	  </scm>
