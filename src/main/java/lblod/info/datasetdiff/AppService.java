@@ -1,6 +1,7 @@
 package lblod.info.datasetdiff;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -36,8 +37,10 @@ public class AppService {
                 log.debug("input container: {}", inputContainer);
                 var importedTriples = taskService.fetchTripleFromFileInputContainer(inputContainer.getGraphUri());
                 var fileContainer = DataContainer.builder().build();
-
-                var previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task);
+                var previousCompletedModel = ModelFactory.createDefaultModel();
+                if (!importedTriples.isEmpty()) {
+                    previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task);
+                }
 
                 var diff = ModelUtils.difference(importedTriples, previousCompletedModel);
                 var intersection = ModelUtils.intersection(importedTriples, previousCompletedModel);
