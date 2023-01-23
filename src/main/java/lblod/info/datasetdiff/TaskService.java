@@ -84,7 +84,7 @@ public class TaskService {
     public Model fetchTripleFromPreviousJobs(Task task) {
         var queryForTargetUrl = queryStore.getQueryWithParameters("getTargetUrl", Map.of("job", task.getJob()));
         var targetUrl = sparqlClient.executeSelectQuery(queryForTargetUrl, rs -> {
-            if(!rs.hasNext()) {
+            if (!rs.hasNext()) {
                 return null;
             }
             var qs = rs.next();
@@ -94,18 +94,19 @@ public class TaskService {
 
         });
 
-        if(StringUtils.isEmpty(targetUrl)) {
+        if (StringUtils.isEmpty(targetUrl)) {
             log.error("This service is experimental. We assume there's always a target url to the job");
             log.error("if we cannot find a target url, simply return an empty model");
             return ModelFactory.createDefaultModel();
         }
-        var queryForPreviousMirrorededPath = queryStore.getQueryWithParameters("getPreviousResultContainer", Map.of("targetUrl", targetUrl));
+        var queryForPreviousMirrorededPath = queryStore.getQueryWithParameters("getPreviousResultContainer",
+                Map.of("targetUrl", targetUrl));
 
         var previousMirroredFilePath = sparqlClient.executeSelectQueryAsListMap(queryForPreviousMirrorededPath);
 
         return previousMirroredFilePath.stream().flatMap(map -> map.values().stream())
-            .map(this::fetchTripleFromFilePath)
-            .reduce(ModelFactory.createDefaultModel(), ModelUtils::merge);
+                .map(this::fetchTripleFromFilePath)
+                .reduce(ModelFactory.createDefaultModel(), ModelUtils::merge);
     }
 
     @SneakyThrows
@@ -130,14 +131,15 @@ public class TaskService {
         var file = ofNullable(path).map(p -> p.replace("share://", ""))
                 .filter(StringUtils::isNotEmpty)
                 .map(p -> new File(shareFolderPath, p))
-                .filter(File::exists)
-                .orElseThrow(() -> {
-                    log.error(" file '{}' not found", path);
-                    throw new RuntimeException(
-                            "path for file '%s' is empty or file not found".formatted(path));
-                });
+                .filter(File::exists);
 
-        return ModelUtils.toModel(FileUtils.openInputStream(file), Lang.TURTLE);
+        if (file.isPresent() && file.get().isFile() && file.get().length() > 0) {
+            return ModelUtils.toModel(FileUtils.openInputStream(file.get()), Lang.TURTLE);
+        } else {
+            log.error(" file '{}' not found", path);
+            return ModelFactory.createDefaultModel();
+        }
+
     }
 
     public void updateTaskStatus(Task task, String status) {
