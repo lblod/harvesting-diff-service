@@ -42,14 +42,19 @@ public class AppService {
                     previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task);
                 }
 
-                var diff = ModelUtils.difference(importedTriples, previousCompletedModel);
+                var newInserts = ModelUtils.difference(importedTriples, previousCompletedModel);
+                var toRemoveOld = ModelUtils.difference(previousCompletedModel, importedTriples);
                 var intersection = ModelUtils.intersection(importedTriples, previousCompletedModel);
 
                 var dataDiffContainer = fileContainer.toBuilder()
-                        .graphUri(taskService.writeTtlFile(task.getGraph(), diff, ("diff-triples.ttl")))
+                        .graphUri(taskService.writeTtlFile(task.getGraph(), newInserts, "new-insert-triples.ttl"))
                         .build();
                 taskService.appendTaskResultFile(task, dataDiffContainer);
 
+                var dataRemovalsContainer = fileContainer.toBuilder()
+                        .graphUri(taskService.writeTtlFile(task.getGraph(), toRemoveOld, "to-remove-triples.ttl"))
+                        .build();
+                taskService.appendTaskResultFile(task, dataRemovalsContainer);
                 var dataIntersectContainer = fileContainer
                         .toBuilder()
                         .graphUri(taskService.writeTtlFile(task.getGraph(), intersection, "intersect-triples.ttl"))
