@@ -19,6 +19,6 @@ FROM openjdk:18
 
 WORKDIR /app
 
-COPY --from=builder /app/target/harvesting-validator.jar ./app.jar
+COPY --from=builder /app/target/harvesting-diff.jar ./app.jar
 
 ENTRYPOINT [ "java", "-jar","/app/app.jar"]
