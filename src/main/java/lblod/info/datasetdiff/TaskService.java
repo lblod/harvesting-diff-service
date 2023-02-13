@@ -2,6 +2,7 @@ package lblod.info.datasetdiff;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import mu.semte.ch.lib.dto.DataContainer;
@@ -99,13 +100,18 @@ public class TaskService {
             log.error("if we cannot find a target url, simply return an empty model");
             return ModelFactory.createDefaultModel();
         }
+
         var queryForPreviousMirrorededPath = queryStore.getQueryWithParameters("getPreviousResultContainer",
                 Map.of("targetUrl", targetUrl));
 
         var previousMirroredFilePath = sparqlClient.executeSelectQueryAsListMap(queryForPreviousMirrorededPath);
 
-        return previousMirroredFilePath.stream().flatMap(map -> map.values().stream())
+        return previousMirroredFilePath.stream()
+                .flatMap(map -> map.values().stream())
+                .peek(path -> log.info("importing {}", path))
                 .map(this::fetchTripleFromFilePath)
+                .peek(m -> log.info("done importing. Triples count: {}", m.size()))
+                .filter(m -> !m.isEmpty())
                 .reduce(ModelFactory.createDefaultModel(), ModelUtils::merge);
     }
 
@@ -134,7 +140,13 @@ public class TaskService {
                 .filter(File::exists);
 
         if (file.isPresent() && file.get().isFile() && file.get().length() > 0) {
-            return ModelUtils.toModel(FileUtils.openInputStream(file.get()), Lang.TURTLE);
+            log.info("found {} file", path);
+            try {
+                return ModelUtils.toModel(FileUtils.openInputStream(file.get()), Lang.TURTLE);
+            } catch (Exception e) {
+                log.error("could not extract triples to a model", e);
+                return ModelFactory.createDefaultModel();
+            }
         } else {
             log.error(" file '{}' not found", path);
             return ModelFactory.createDefaultModel();
@@ -143,7 +155,7 @@ public class TaskService {
     }
 
     public void updateTaskStatus(Task task, String status) {
-        log.debug("set task status to {}...", status);
+        log.info("set task status to {}...", status);
 
         String queryUpdate = queryStore.getQuery("updateTaskStatus")
                 .formatted(status, formattedDate(LocalDateTime.now()), task.getTask());
@@ -152,7 +164,7 @@ public class TaskService {
 
     public void importTriples(Task task, String graph,
             Model model) {
-        log.debug("running import triples with batch size {}, model size: {}, graph: <{}>", defaultBatchSize,
+        log.info("running import triples with batch size {}, model size: {}, graph: <{}>", defaultBatchSize,
                 model.size(), graph);
         List<Triple> triples = model.getGraph().find().toList(); // duplicate so we can splice
         Lists.partition(triples, defaultBatchSize)

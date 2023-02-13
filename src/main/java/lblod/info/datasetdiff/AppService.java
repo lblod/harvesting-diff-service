@@ -34,7 +34,7 @@ public class AppService {
             try {
                 taskService.updateTaskStatus(task, Constants.STATUS_BUSY);
                 var inputContainer = taskService.selectInputContainer(task).get(0);
-                log.debug("input container: {}", inputContainer);
+                log.info("input container: {}", inputContainer);
                 var importedTriples = taskService.fetchTripleFromFileInputContainer(inputContainer.getGraphUri());
                 var fileContainer = DataContainer.builder().build();
                 var previousCompletedModel = ModelFactory.createDefaultModel();
@@ -70,7 +70,7 @@ public class AppService {
                         .build();
                 taskService.appendTaskResultGraph(task, graphContainer);
                 taskService.updateTaskStatus(task, Constants.STATUS_SUCCESS);
-                log.debug("Done with success for task {}", task.getId());
+                log.info("Done with success for task {}", task.getId());
             } catch (Throwable e) {
                 log.error("Error:", e);
                 taskService.updateTaskStatus(task, Constants.STATUS_FAILED);
