@@ -106,13 +106,24 @@ public class TaskService {
 
         var previousMirroredFilePath = sparqlClient.executeSelectQueryAsListMap(queryForPreviousMirrorededPath);
 
-        return previousMirroredFilePath.stream()
+        var models = previousMirroredFilePath.stream()
                 .flatMap(map -> map.values().stream())
                 .peek(path -> log.info("importing {}", path))
                 .map(this::fetchTripleFromFilePath)
                 .peek(m -> log.info("done importing. Triples count: {}", m.size()))
-                .filter(m -> !m.isEmpty())
-                .reduce(ModelFactory.createDefaultModel(), ModelUtils::merge);
+                .filter(m -> !m.isEmpty()).toList();
+        log.info("done collecting previous mirrored files. Model count: {}. aggrating...", models.size());
+        var aggregateModel = ModelFactory.createDefaultModel();
+        for (var model : models) {
+            log.info("aggregating model with length {}...", model.size());
+            aggregateModel.add(model);
+            log.info("done aggregating model. current aggregate length: {}", aggregateModel.size());
+        }
+
+        log.info("triple from previous jobs extracted. size: {}", aggregateModel.size());
+
+        return aggregateModel;
+        // .reduce(ModelFactory.createDefaultModel(), ModelUtils::merge);
     }
 
     @SneakyThrows
