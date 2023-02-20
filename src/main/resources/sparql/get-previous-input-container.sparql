@@ -25,14 +25,13 @@ select distinct ?path where {
 	     <http://redpencil.data.gift/vocabularies/tasks/operation> <http://lblod.data.gift/id/jobs/concept/TaskOperation/publishHarvestedTriples>;
 	         <http://www.w3.org/ns/adms#status> <http://redpencil.data.gift/id/concept/JobStatus/success>.
 			 
-	  ?taskMirroring <http://purl.org/dc/terms/isPartOf> ?job;
-	     <http://redpencil.data.gift/vocabularies/tasks/operation> <http://lblod.data.gift/id/jobs/concept/TaskOperation/mirroring>;
+    ?taskDiff <http://purl.org/dc/terms/isPartOf> ?job;
+	     <http://redpencil.data.gift/vocabularies/tasks/operation> <http://lblod.data.gift/id/jobs/concept/TaskOperation/diff>;
 	         <http://www.w3.org/ns/adms#status> <http://redpencil.data.gift/id/concept/JobStatus/success>;
-	         
-	         <http://redpencil.data.gift/vocabularies/tasks/resultsContainer> ?resultContainer.
-	         ?resultContainer <http://redpencil.data.gift/vocabularies/tasks/hasFile> ?file.
+	         <http://redpencil.data.gift/vocabularies/tasks/inputContainer> ?inputContainer.
+	         ?inputContainer <http://redpencil.data.gift/vocabularies/tasks/hasFile> ?file.
 			 ?path <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#dataSource> ?file.
-	         
+
     ?remoteDataObject <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#url> ?targetUrl.
 	         
          filter(?targetUrl = <${targetUrl}>)

@@ -101,7 +101,7 @@ public class TaskService {
             return ModelFactory.createDefaultModel();
         }
 
-        var queryForPreviousMirrorededPath = queryStore.getQueryWithParameters("getPreviousResultContainer",
+        var queryForPreviousMirrorededPath = queryStore.getQueryWithParameters("getPreviousInputContainer",
                 Map.of("targetUrl", targetUrl));
 
         var previousMirroredFilePath = sparqlClient.executeSelectQueryAsListMap(queryForPreviousMirrorededPath);
