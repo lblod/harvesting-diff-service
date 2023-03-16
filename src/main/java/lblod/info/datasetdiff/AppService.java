@@ -37,10 +37,7 @@ public class AppService {
                 log.info("input container: {}", inputContainer);
                 var importedTriples = taskService.fetchTripleFromFileInputContainer(inputContainer.getGraphUri());
                 var fileContainer = DataContainer.builder().build();
-                var previousCompletedModel = ModelFactory.createDefaultModel();
-                if (!importedTriples.isEmpty()) {
-                    previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task);
-                }
+                var previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task);
 
                 var newInserts = ModelUtils.difference(importedTriples, previousCompletedModel);
                 var toRemoveOld = ModelUtils.difference(previousCompletedModel, importedTriples);
