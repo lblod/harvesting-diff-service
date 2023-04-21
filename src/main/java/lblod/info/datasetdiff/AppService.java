@@ -1,7 +1,6 @@
 package lblod.info.datasetdiff;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.jena.rdf.model.ModelFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
