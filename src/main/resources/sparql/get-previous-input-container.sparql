@@ -1,40 +1,55 @@
-PREFIX dct: <http://purl.org/dc/terms/>
-PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
-PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
-PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX adms: <http://www.w3.org/ns/adms#>
+PREFIX jobst: <http://redpencil.data.gift/id/concept/JobStatus/>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX tasko: <http://lblod.data.gift/id/jobs/concept/TaskOperation/>
+PREFIX dlstatus: <http://lblod.data.gift/file-download-statuses/>
 
-select distinct ?path where {
+SELECT DISTINCT ?path WHERE {
 
-	  ?job a <http://vocab.deri.ie/cogs#Job>;
-	       <http://www.w3.org/ns/adms#status> <http://redpencil.data.gift/id/concept/JobStatus/success>.
+  ?job
+    a cogs:Job ;
+	  adms:status jobst:success .
 
+  ?taskCollecting
+    dct:isPartOf ?job ;
+    task:operation tasko:collecting ;
+    adms:status jobst:success ;
+    task:resultsContainer ?dataContainer .
 
-	  ?taskCollecting <http://purl.org/dc/terms/isPartOf> ?job;
-		 <http://redpencil.data.gift/vocabularies/tasks/operation> <http://lblod.data.gift/id/jobs/concept/TaskOperation/collecting>;
-		 <http://www.w3.org/ns/adms#status> <http://redpencil.data.gift/id/concept/JobStatus/success>;
-	         <http://redpencil.data.gift/vocabularies/tasks/resultsContainer> ?dataContainer.
-	 
-          ?dataContainer <http://redpencil.data.gift/vocabularies/tasks/hasFile> ?remoteDataObject.
-          
-	  ?remoteDataObject <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#url> ?targetUrl;
-	                    <http://www.w3.org/ns/adms#status> <http://lblod.data.gift/file-download-statuses/collected>.
-	  
-	  # we only want to grab the previous jobs where data were published.
-	  ?taskPublishing <http://purl.org/dc/terms/isPartOf> ?job;
-	     <http://redpencil.data.gift/vocabularies/tasks/operation> <http://lblod.data.gift/id/jobs/concept/TaskOperation/publishHarvestedTriples>;
-	         <http://www.w3.org/ns/adms#status> <http://redpencil.data.gift/id/concept/JobStatus/success>.
-			 
-    ?taskDiff <http://purl.org/dc/terms/isPartOf> ?job;
-	     <http://redpencil.data.gift/vocabularies/tasks/operation> <http://lblod.data.gift/id/jobs/concept/TaskOperation/diff>;
-	         <http://www.w3.org/ns/adms#status> <http://redpencil.data.gift/id/concept/JobStatus/success>;
-	         <http://redpencil.data.gift/vocabularies/tasks/inputContainer> ?inputContainer.
-	         ?inputContainer <http://redpencil.data.gift/vocabularies/tasks/hasFile> ?file.
-			 ?path <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#dataSource> ?file.
+  ?dataContainer
+    task:hasFile ?remoteDataObject .
 
-    ?remoteDataObject <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#url> ?targetUrl.
-	         
-         filter(?targetUrl = <${targetUrl}>)
+  ?remoteDataObject
+    nie:url ?targetUrl ;
+    adms:status dlstatus:collected .
 
-	} 
-	
+  FILTER (?targetUrl = <${targetUrl}>)
+
+  # we only want to grab the previous jobs where data were published.
+  VALUES ?endOperation {
+    tasko:publishHarvestedTriples
+    tasko:publishHarvestedTriplesWithDeletes
+  }
+  ?taskPublishing
+    dct:isPartOf ?job ;
+    task:operation ?endOperation ;
+    adms:status jobst:success .
+
+  ?taskDiff
+    dct:isPartOf ?job ;
+    task:operation tasko:diff ;
+    adms:status jobst:success ;
+    task:inputContainer ?inputContainer .
+
+  ?inputContainer
+    task:hasFile ?file .
+
+  ?path
+    nie:dataSource ?file .
+
+  ?remoteDataObject
+    nie:url ?targetUrl .
+}
