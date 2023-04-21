@@ -18,6 +18,7 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFLanguages;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -223,7 +224,7 @@ public class TaskService {
         var loId = uuid();
         var logicalFile = "%s/%s".formatted(Constants.LOGICAL_FILE_PREFIX, loId);
         var now = formattedDate(LocalDateTime.now());
-        var file = ModelUtils.toFile(content, rdfLang, path);
+        var file = ModelUtils.toFile(content, RDFLanguages.NT, path);
         var fileSize = file.length();
         var queryParameters = ImmutableMap.<String, Object>builder()
                 .put("graph", graph)
@@ -235,7 +236,7 @@ public class TaskService {
                 .put("fileSize", fileSize)
                 .put("loId", loId)
                 .put("logicalFileName", logicalFileName)
-                .put("fileExtension", "nt")
+                .put("fileExtension", "ttl")
                 .put("contentType", contentType).build();
 
         var queryStr = queryStore.getQueryWithParameters("writeTtlFile", queryParameters);
