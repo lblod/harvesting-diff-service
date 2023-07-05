@@ -23,10 +23,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 import static java.util.Optional.ofNullable;
 import static mu.semte.ch.lib.utils.ModelUtils.*;
@@ -154,7 +156,12 @@ public class TaskService {
         if (file.isPresent() && file.get().isFile() && file.get().length() > 0) {
             log.info("found {} file", path);
             try {
-                return ModelUtils.toModel(FileUtils.openInputStream(file.get()), Lang.TURTLE);
+                var filePresent = file.get();
+                InputStream is = FileUtils.openInputStream(filePresent);
+                if (filePresent.getName().endsWith("gz")) {
+                    is = new GZIPInputStream(is);
+                }
+                return ModelUtils.toModel(is, Lang.TURTLE);
             } catch (Exception e) {
                 log.error("could not extract triples to a model", e);
                 return ModelFactory.createDefaultModel();
