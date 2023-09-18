@@ -5,17 +5,13 @@ WORKDIR /app
 
 COPY pom.xml .
 
-COPY .mvn .mvn
-
-COPY settings.xml settings.xml
-
 RUN mvn verify --fail-never
 
 COPY ./src ./src
 
 RUN mvn package -DskipTests
 
-FROM openjdk:18
+FROM eclipse-temurin:18-jre
 
 WORKDIR /app
 

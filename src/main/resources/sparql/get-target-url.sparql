@@ -4,7 +4,7 @@ PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
 PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
 PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
 PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
-
+PREFIX prov: <http://www.w3.org/ns/prov#>
 select distinct ?targetUrl WHERE {
 
     ?tasks <http://purl.org/dc/terms/isPartOf> <${job}>;
@@ -12,6 +12,7 @@ select distinct ?targetUrl WHERE {
            <http://www.w3.org/ns/adms#status> <http://redpencil.data.gift/id/concept/JobStatus/success>.
     ?tasks <http://redpencil.data.gift/vocabularies/tasks/resultsContainer> ?dataContainer.
     ?dataContainer <http://redpencil.data.gift/vocabularies/tasks/hasFile> ?remoteDataObject.
+    ?remoteDataObject prov:wasDerivedFrom <${wasDerivedFrom}>.
     ?remoteDataObject <http://purl.org/dc/terms/created> ?dataObjectCreated.
     ?remoteDataObject <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#url> ?targetUrl.
 } order by ?dataObjectCreated  limit 1
