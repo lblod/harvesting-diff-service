@@ -103,7 +103,7 @@ public class TaskService {
                 .filter(m -> !m.isEmpty())
                 .toList();
         log.info(
-                "done collecting previous mirrored files. Model count: {}. aggrating...",
+                "done collecting previous mirrored files. Model count: {}. aggregating...",
                 models.size());
         var aggregateModel = ModelFactory.createDefaultModel();
         for (var model : models) {
