@@ -9,10 +9,8 @@ PREFIX dlstatus: <http://lblod.data.gift/file-download-statuses/>
 
 PREFIX prov: <http://www.w3.org/ns/prov#>
 SELECT DISTINCT ?path  ?fromUrl WHERE {
-
-
-
   # we only want to grab the previous jobs where data were published.
+  <${targetUrl}> nie:url ?derivedUrl.
   VALUES ?endOperation {
     tasko:publishHarvestedTriples
     tasko:publishHarvestedTriplesWithDeletes
@@ -37,7 +35,5 @@ SELECT DISTINCT ?path  ?fromUrl WHERE {
   ?path
     nie:dataSource ?file .
 
-
-
-  FILTER (?fromUrl = 	<${targetUrl}>)
+  FILTER (?fromUrl = 	?derivedUrl)
 }
