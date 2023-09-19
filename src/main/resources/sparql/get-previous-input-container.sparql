@@ -7,7 +7,10 @@ PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
 PREFIX tasko: <http://lblod.data.gift/id/jobs/concept/TaskOperation/>
 PREFIX dlstatus: <http://lblod.data.gift/file-download-statuses/>
 
+PREFIX prov: <http://www.w3.org/ns/prov#>
 SELECT DISTINCT ?path WHERE {
+
+  <${targetUrl}> <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#url> ?derivedTargetUrl.
 
   ?job
     a cogs:Job ;
@@ -26,7 +29,7 @@ SELECT DISTINCT ?path WHERE {
     nie:url ?targetUrl ;
     adms:status dlstatus:collected .
 
-  FILTER (?targetUrl = <${targetUrl}>)
+   FILTER (?targetUrl = ?derivedTargetUrl)
 
   # we only want to grab the previous jobs where data were published.
   VALUES ?endOperation {
