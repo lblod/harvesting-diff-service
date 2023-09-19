@@ -8,7 +8,7 @@ PREFIX tasko: <http://lblod.data.gift/id/jobs/concept/TaskOperation/>
 PREFIX dlstatus: <http://lblod.data.gift/file-download-statuses/>
 
 PREFIX prov: <http://www.w3.org/ns/prov#>
-SELECT DISTINCT ?path  ?fromUrl WHERE {
+SELECT DISTINCT ?path  WHERE {
   # we only want to grab the previous jobs where data were published.
   <${targetUrl}> nie:url ?derivedUrl.
   VALUES ?endOperation {
