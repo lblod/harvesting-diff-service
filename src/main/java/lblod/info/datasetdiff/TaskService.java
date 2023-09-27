@@ -123,9 +123,25 @@ public class TaskService {
     }
 
     @SneakyThrows
-    public List<ModelByDerived> fetchTripleFromFileInputContainer(String fileContainerUri) {
-        var query = queryStore.getQuery("fetchTripleFromFileInputContainer")
-                .formatted(fileContainerUri);
+    public int countTriplesFromFileInputContainer(String fileContainerUri) {
+        var query = queryStore.getQueryWithParameters(
+                "countTripleFromFileInputContainer",
+                Map.of("container", fileContainerUri));
+        return sparqlClient.executeSelectQuery(query, resultSet -> {
+            if (!resultSet.hasNext()) {
+                return 0;
+            }
+            return resultSet.next().getLiteral("count").getInt();
+        });
+    }
+
+    @SneakyThrows
+    public List<ModelByDerived> fetchTripleFromFileInputContainer(String fileContainerUri, int limitSize,
+            int offset) {
+        var query = queryStore.getQueryWithParameters(
+                "fetchTripleFromFileInputContainer",
+                Map.of("container", fileContainerUri, "limitSize", limitSize,
+                        "offsetNumber", offset));
         var pathsByDerived = sparqlClient.executeSelectQuery(query, resultSet -> {
             if (!resultSet.hasNext()) {
                 return null;
