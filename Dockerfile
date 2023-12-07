@@ -17,5 +17,5 @@ WORKDIR /app
 
 COPY --from=builder /app/target/harvesting-diff.jar ./app.jar
 
-ENV JAVA_OPTS=""
+#ENV JAVA_OPTS=""
 ENTRYPOINT ["java", "-XX:+CompactStrings","-jar", "/app/app.jar"]
