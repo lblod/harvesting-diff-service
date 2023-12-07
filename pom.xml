@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.6.15</version>
+		<version>2.7.18</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>lblod.info</groupId>
@@ -16,7 +16,7 @@
 	<description>Takes two datasets and returns only the difference </description>
 	<properties>
 		<java.version>21</java.version>
-		<mu-java.version>1.0.26</mu-java.version>
+		<mu-java.version>1.2.0</mu-java.version>
 		<lombok.version>1.18.30</lombok.version>
 		<jena.version>3.17.0</jena.version>
 	</properties>
