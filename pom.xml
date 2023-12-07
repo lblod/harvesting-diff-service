@@ -15,8 +15,10 @@
 	<name>dataset-diff</name>
 	<description>Takes two datasets and returns only the difference </description>
 	<properties>
-		<java.version>17</java.version>
+		<java.version>21</java.version>
 		<mu-java.version>1.0.26</mu-java.version>
+		<lombok.version>1.18.30</lombok.version>
+
 	</properties>
 	<scm>
 		<connection>
