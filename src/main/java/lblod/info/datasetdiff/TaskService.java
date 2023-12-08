@@ -45,6 +45,8 @@ public class TaskService {
     private int defaultLimitSize;
     @Value("${sparql.maxRetry}")
     private int maxRetry;
+    @Value("${sparql.highLoadSparqlEndpoint}")
+    private String highLoadSparqlEndpoint;
 
     public TaskService(SparqlQueryStore queryStore, SparqlClient sparqlClient) {
         this.queryStore = queryStore;
@@ -54,7 +56,7 @@ public class TaskService {
     public boolean isTask(String subject) {
         String queryStr = queryStore.getQuery("isTask").formatted(subject);
 
-        return sparqlClient.executeAskQuery(queryStr);
+        return sparqlClient.executeAskQuery(queryStr, highLoadSparqlEndpoint, true);
     }
 
     public Task loadTask(String deltaEntry) {
@@ -81,7 +83,7 @@ public class TaskService {
                     .build();
             log.debug("task: {}", task);
             return task;
-        });
+        }, highLoadSparqlEndpoint, true);
     }
 
     @SneakyThrows
@@ -93,7 +95,7 @@ public class TaskService {
                 "getPreviousInputContainer", Map.of("targetUrl", derivedFrom));
 
         var previousMirroredFilePath = sparqlClient.executeSelectQueryAsListMap(
-                queryForPreviousMirrorededPath);
+                queryForPreviousMirrorededPath, highLoadSparqlEndpoint, true);
 
         var models = previousMirroredFilePath.stream()
                 .flatMap(map -> map.values().stream())
@@ -132,7 +134,7 @@ public class TaskService {
                 return 0;
             }
             return resultSet.next().getLiteral("count").getInt();
-        });
+        }, highLoadSparqlEndpoint, true);
     }
 
     @SneakyThrows
@@ -155,7 +157,7 @@ public class TaskService {
             }
 
             return byDerived;
-        });
+        }, highLoadSparqlEndpoint, true);
 
         if (pathsByDerived == null) {
             log.error(" files '{}' not found", fileContainerUri);
@@ -287,7 +289,7 @@ public class TaskService {
                 .build();
 
         var queryStr = queryStore.getQueryWithParameters("writeTtlFile", queryParameters);
-        sparqlClient.executeUpdateQuery(queryStr);
+        sparqlClient.executeUpdateQuery(queryStr, highLoadSparqlEndpoint, true);
         return logicalFile;
     }
 
@@ -300,7 +302,7 @@ public class TaskService {
         var queryStr = queryStore.getQueryWithParameters("appendTaskResultFile",
                 queryParameters);
 
-        sparqlClient.executeUpdateQuery(queryStr);
+        sparqlClient.executeUpdateQuery(queryStr, highLoadSparqlEndpoint, true);
     }
 
     public void appendTaskResultGraph(Task task, DataContainer dataContainer) {
@@ -308,7 +310,7 @@ public class TaskService {
         var queryStr = queryStore.getQueryWithParameters("appendTaskResultGraph",
                 queryParameters);
         log.debug(queryStr);
-        sparqlClient.executeUpdateQuery(queryStr);
+        sparqlClient.executeUpdateQuery(queryStr, highLoadSparqlEndpoint, true);
     }
 
     public List<DataContainer> selectInputContainer(Task task) {
@@ -325,7 +327,7 @@ public class TaskService {
                             .graphUri(r.getResource("graph").getURI())
                             .build()));
             return graphUris;
-        });
+        }, highLoadSparqlEndpoint, true);
     }
 
     public void appendTaskError(Task task, String message) {
