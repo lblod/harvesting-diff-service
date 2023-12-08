@@ -219,45 +219,6 @@ public class TaskService {
         sparqlClient.executeUpdateQuery(queryUpdate);
     }
 
-    public void importTriples(Task task, String graph, Model model) {
-        log.info(
-                "running import triples with batch size {}, model size: {}, graph: <{}>",
-                defaultBatchSize, model.size(), graph);
-        List<Triple> triples = model.getGraph().find().toList(); // duplicate so we can splice
-        Lists.partition(triples, defaultBatchSize)
-                .stream()
-                .parallel()
-                .map(batch -> {
-                    Model batchModel = ModelFactory.createDefaultModel();
-                    Graph batchGraph = batchModel.getGraph();
-                    batch.forEach(batchGraph::add);
-                    return batchModel;
-                })
-                .forEach(
-                        batchModel -> this.insertModelOrRetry(task, graph, batchModel));
-    }
-
-    private void insertModelOrRetry(Task task, String graph, Model batchModel) {
-        int retryCount = 0;
-        boolean success = false;
-        do {
-            try {
-                sparqlClient.insertModel(graph, batchModel);
-                success = true;
-                break;
-            } catch (Exception e) {
-                log.error("an error occurred, retry count {}, max retry {}, error: {}",
-                        retryCount, maxRetry, e);
-                retryCount += 1;
-            }
-        } while (retryCount < maxRetry);
-        if (!success) {
-            this.appendTaskError(
-                    task, "Reaching max retries. Check the logs for further details.");
-            this.updateTaskStatus(task, Constants.STATUS_FAILED);
-        }
-    }
-
     @SneakyThrows
     public String writeTtlFile(String graph, Model content,
             String logicalFileName, String derivedFrom) {
