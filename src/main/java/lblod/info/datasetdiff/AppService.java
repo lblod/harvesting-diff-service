@@ -42,7 +42,7 @@ public class AppService {
                         inputContainer.getGraphUri());
                 var pagesCount = countTriples > defaultLimitSize
                         ? countTriples / defaultLimitSize
-                        : defaultLimitSize;
+                        : 1;
 
                 var fileContainer = DataContainer.builder().build();
 
