@@ -142,9 +142,6 @@ public class TaskService {
                 Map.of("container", fileContainerUri, "limitSize", limitSize,
                         "offsetNumber", offset));
         var pathsByDerived = sparqlClient.executeSelectQuery(query, resultSet -> {
-            if (!resultSet.hasNext()) {
-                return null;
-            }
             var byDerived = new ArrayList<PathByDerived>();
 
             while (resultSet.hasNext()) {
@@ -156,11 +153,8 @@ public class TaskService {
             return byDerived;
         }, highLoadSparqlEndpoint, true);
 
-        if (pathsByDerived == null) {
-            log.error(" files '{}' not found", fileContainerUri);
-            throw new RuntimeException(
-                    "paths for file container '%s' is empty or file/derivedFrom not found"
-                            .formatted(fileContainerUri));
+        if (pathsByDerived.isEmpty()) {
+            log.warn(" files '{}' not found", fileContainerUri);
         }
 
         var modelsByDerived = new ArrayList<ModelByDerived>();
