@@ -84,10 +84,10 @@ public class AppService {
                                         mdb.derivedFrom()))
                                 .build();
                         taskService.appendTaskResultFile(task, dataIntersectContainer);
-                        var dataContainer = DataContainer.builder()
-                                .graphUri(dataDiffContainer.getGraphUri())
-                                .build();
-                        taskService.appendTaskResultFile(task, dataContainer);
+                        // var dataContainer = DataContainer.builder()
+                        // .graphUri(dataDiffContainer.getGraphUri())
+                        // .build();
+                        // taskService.appendTaskResultFile(task, dataContainer);
                     }
                 }
 
