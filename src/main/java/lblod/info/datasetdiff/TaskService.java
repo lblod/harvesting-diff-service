@@ -1,8 +1,16 @@
 package lblod.info.datasetdiff;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
+import static java.util.Optional.ofNullable;
+import static mu.semte.ch.lib.utils.ModelUtils.*;
 
+import com.google.common.collect.ImmutableMap;
+import java.io.File;
+import java.io.InputStream;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.zip.GZIPInputStream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import mu.semte.ch.lib.dto.DataContainer;
@@ -12,8 +20,6 @@ import mu.semte.ch.lib.utils.SparqlClient;
 import mu.semte.ch.lib.utils.SparqlQueryStore;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.jena.graph.Graph;
-import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
@@ -21,17 +27,6 @@ import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFLanguages;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.io.File;
-import java.io.InputStream;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.zip.GZIPInputStream;
-
-import static java.util.Optional.ofNullable;
-import static mu.semte.ch.lib.utils.ModelUtils.*;
 
 @Service
 @Slf4j
@@ -47,6 +42,8 @@ public class TaskService {
     private int defaultLimitSize;
     @Value("${sparql.maxRetry}")
     private int maxRetry;
+    @Value("${sparql.highLoadSparqlEndpoint}")
+    private String highLoadSparqlEndpoint;
 
     public TaskService(SparqlQueryStore queryStore, SparqlClient sparqlClient) {
         this.queryStore = queryStore;
@@ -56,7 +53,7 @@ public class TaskService {
     public boolean isTask(String subject) {
         String queryStr = queryStore.getQuery("isTask").formatted(subject);
 
-        return sparqlClient.executeAskQuery(queryStr);
+        return sparqlClient.executeAskQuery(queryStr, highLoadSparqlEndpoint, true);
     }
 
     public Task loadTask(String deltaEntry) {
@@ -67,9 +64,12 @@ public class TaskService {
                 return null;
             }
             var t = resultSet.next();
-            Task task = Task.builder().task(t.getResource("task").getURI())
+            Task task = Task.builder()
+                    .task(t.getResource("task").getURI())
                     .job(t.getResource("job").getURI())
-                    .error(ofNullable(t.getResource("error")).map(Resource::getURI).orElse(null))
+                    .error(ofNullable(t.getResource("error"))
+                            .map(Resource::getURI)
+                            .orElse(null))
                     .id(t.getLiteral("id").getString())
                     .created(t.getLiteral("created").getString())
                     .modified(t.getLiteral("modified").getString())
@@ -80,75 +80,104 @@ public class TaskService {
                     .build();
             log.debug("task: {}", task);
             return task;
-        });
-
+        }, highLoadSparqlEndpoint, true);
     }
 
     @SneakyThrows
-    public Model fetchTripleFromPreviousJobs(Task task) {
-        var queryForTargetUrl = queryStore.getQueryWithParameters("getTargetUrl", Map.of("job", task.getJob()));
-        var targetUrl = sparqlClient.executeSelectQuery(queryForTargetUrl, rs -> {
-            if (!rs.hasNext()) {
-                return null;
-            }
-            var qs = rs.next();
-            if (qs.getResource("targetUrl") == null)
-                return null;
-            return qs.getResource("targetUrl").getURI();
+    public Model fetchTripleFromPreviousJobs(Task task, String derivedFrom) {
 
-        });
+        log.info("fetch triple from previous jobs with derived from {}",
+                derivedFrom);
+        var queryForPreviousMirrorededPath = queryStore.getQueryWithParameters(
+                "getPreviousInputContainer", Map.of("targetUrl", derivedFrom));
 
-        if (StringUtils.isEmpty(targetUrl)) {
-            log.error("This service is experimental. We assume there's always a target url to the job");
-            log.error("if we cannot find a target url, simply return an empty model");
-            return ModelFactory.createDefaultModel();
-        }
-
-        var queryForPreviousMirrorededPath = queryStore.getQueryWithParameters("getPreviousInputContainer",
-                Map.of("targetUrl", targetUrl));
-
-        var previousMirroredFilePath = sparqlClient.executeSelectQueryAsListMap(queryForPreviousMirrorededPath);
+        var previousMirroredFilePath = sparqlClient.executeSelectQueryAsListMap(
+                queryForPreviousMirrorededPath, highLoadSparqlEndpoint, true);
 
         var models = previousMirroredFilePath.stream()
                 .flatMap(map -> map.values().stream())
                 .peek(path -> log.info("importing {}", path))
                 .map(this::fetchTripleFromFilePath)
                 .peek(m -> log.info("done importing. Triples count: {}", m.size()))
-                .filter(m -> !m.isEmpty()).toList();
-        log.info("done collecting previous mirrored files. Model count: {}. aggrating...", models.size());
+                .filter(m -> !m.isEmpty())
+                .toList();
+        log.info(
+                "done collecting previous mirrored files. Model count: {}. aggregating...",
+                models.size());
         var aggregateModel = ModelFactory.createDefaultModel();
         for (var model : models) {
             log.info("aggregating model with length {}...", model.size());
             aggregateModel.add(model);
-            log.info("done aggregating model. current aggregate length: {}", aggregateModel.size());
+            log.info("done aggregating model. current aggregate length: {}",
+                    aggregateModel.size());
         }
 
-        log.info("triple from previous jobs extracted. size: {}", aggregateModel.size());
+        log.info("triple from previous jobs extracted. size: {}",
+                aggregateModel.size());
 
         return aggregateModel;
-        // .reduce(ModelFactory.createDefaultModel(), ModelUtils::merge);
+    }
+
+    record PathByDerived(String derivedFrom, String path) {
     }
 
     @SneakyThrows
-    public Model fetchTripleFromFileInputContainer(String fileContainerUri) {
-        var query = queryStore.getQuery("fetchTripleFromFileInputContainer").formatted(fileContainerUri);
-        var path = sparqlClient.executeSelectQuery(query, resultSet -> {
+    public int countTriplesFromFileInputContainer(String fileContainerUri) {
+        var query = queryStore.getQueryWithParameters(
+                "countTripleFromFileInputContainer",
+                Map.of("container", fileContainerUri));
+        return sparqlClient.executeSelectQuery(query, resultSet -> {
             if (!resultSet.hasNext()) {
-                return null;
+                return 0;
             }
-            var qs = resultSet.next();
-            if (qs.getResource("path") == null)
-                return null;
-            return qs.getResource("path").getURI();
-        });
-
-        return fetchTripleFromFilePath(path);
+            return resultSet.next().getLiteral("count").getInt();
+        }, highLoadSparqlEndpoint, true);
     }
 
     @SneakyThrows
+    public List<ModelByDerived> fetchTripleFromFileInputContainer(String fileContainerUri, int limitSize,
+            int offset) {
+        var query = queryStore.getQueryWithParameters(
+                "fetchTripleFromFileInputContainer",
+                Map.of("container", fileContainerUri, "limitSize", limitSize,
+                        "offsetNumber", offset));
+        var pathsByDerived = sparqlClient.executeSelectQuery(query, resultSet -> {
+            var byDerived = new ArrayList<PathByDerived>();
+
+            while (resultSet.hasNext()) {
+                var qs = resultSet.next();
+                byDerived.add(new PathByDerived(qs.getResource("derivedFrom").getURI(),
+                        qs.getResource("path").getURI()));
+            }
+
+            return byDerived;
+        }, highLoadSparqlEndpoint, true);
+
+        if (pathsByDerived.isEmpty()) {
+            log.warn(" files '{}' not found", fileContainerUri);
+        }
+
+        var modelsByDerived = new ArrayList<ModelByDerived>();
+        for (var pbd : pathsByDerived) {
+            var path = pbd.path.replace("share://", "");
+            var file = new File(shareFolderPath, path);
+            if (!file.exists()) {
+                throw new RuntimeException("file %s doesn't exist".formatted(path));
+            }
+            var modelByDerived = new ModelByDerived(
+                    pbd.derivedFrom,
+                    ModelUtils.toModel(FileUtils.openInputStream(file), Lang.TURTLE));
+            modelsByDerived.add(modelByDerived);
+        }
+        return modelsByDerived;
+    }
+
+    @SneakyThrows
+    @Deprecated
     public Model fetchTripleFromFilePath(String path) {
 
-        var file = ofNullable(path).map(p -> p.replace("share://", ""))
+        var file = ofNullable(path)
+                .map(p -> p.replace("share://", ""))
                 .filter(StringUtils::isNotEmpty)
                 .map(p -> new File(shareFolderPath, p))
                 .filter(File::exists);
@@ -170,57 +199,20 @@ public class TaskService {
             log.error(" file '{}' not found", path);
             return ModelFactory.createDefaultModel();
         }
-
     }
 
     public void updateTaskStatus(Task task, String status) {
         log.info("set task status to {}...", status);
 
         String queryUpdate = queryStore.getQuery("updateTaskStatus")
-                .formatted(status, formattedDate(LocalDateTime.now()), task.getTask());
+                .formatted(status, formattedDate(LocalDateTime.now()),
+                        task.getTask());
         sparqlClient.executeUpdateQuery(queryUpdate);
     }
 
-    public void importTriples(Task task, String graph,
-            Model model) {
-        log.info("running import triples with batch size {}, model size: {}, graph: <{}>", defaultBatchSize,
-                model.size(), graph);
-        List<Triple> triples = model.getGraph().find().toList(); // duplicate so we can splice
-        Lists.partition(triples, defaultBatchSize)
-                .stream()
-                .parallel()
-                .map(batch -> {
-                    Model batchModel = ModelFactory.createDefaultModel();
-                    Graph batchGraph = batchModel.getGraph();
-                    batch.forEach(batchGraph::add);
-                    return batchModel;
-                })
-                .forEach(batchModel -> this.insertModelOrRetry(task, graph, batchModel));
-    }
-
-    private void insertModelOrRetry(Task task, String graph, Model batchModel) {
-        int retryCount = 0;
-        boolean success = false;
-        do {
-            try {
-                sparqlClient.insertModel(graph, batchModel);
-                success = true;
-                break;
-            } catch (Exception e) {
-                log.error("an error occurred, retry count {}, max retry {}, error: {}", retryCount, maxRetry, e);
-                retryCount += 1;
-            }
-        } while (retryCount < maxRetry);
-        if (!success) {
-            this.appendTaskError(task, "Reaching max retries. Check the logs for further details.");
-            this.updateTaskStatus(task, Constants.STATUS_FAILED);
-        }
-    }
-
     @SneakyThrows
-    public String writeTtlFile(String graph,
-            Model content,
-            String logicalFileName) {
+    public String writeTtlFile(String graph, Model content,
+            String logicalFileName, String derivedFrom) {
         var rdfLang = filenameToLang(logicalFileName);
         var fileExtension = getExtension(rdfLang);
         var contentType = getContentType(rdfLang);
@@ -240,55 +232,54 @@ public class TaskService {
                 .put("phyId", phyId)
                 .put("phyFilename", phyFilename)
                 .put("now", now)
+                .put("derivedFrom", derivedFrom)
                 .put("fileSize", fileSize)
                 .put("loId", loId)
                 .put("logicalFileName", logicalFileName)
                 .put("fileExtension", "ttl")
-                .put("contentType", contentType).build();
+                .put("contentType", contentType)
+                .build();
 
         var queryStr = queryStore.getQueryWithParameters("writeTtlFile", queryParameters);
-        sparqlClient.executeUpdateQuery(queryStr);
+        sparqlClient.executeUpdateQuery(queryStr, highLoadSparqlEndpoint, true);
         return logicalFile;
     }
 
-    public void appendTaskResultFile(Task task,
-            DataContainer dataContainer) {
+    public void appendTaskResultFile(Task task, DataContainer dataContainer) {
         var containerUri = dataContainer.getUri();
         var containerId = dataContainer.getId();
         var fileUri = dataContainer.getGraphUri();
-        var queryParameters = Map.of(
-                "containerUri", containerUri,
-                "containerId", containerId,
-                "fileUri", fileUri, "task", task);
-        var queryStr = queryStore.getQueryWithParameters("appendTaskResultFile", queryParameters);
+        var queryParameters = Map.of("containerUri", containerUri, "containerId",
+                containerId, "fileUri", fileUri, "task", task);
+        var queryStr = queryStore.getQueryWithParameters("appendTaskResultFile",
+                queryParameters);
 
-        sparqlClient.executeUpdateQuery(queryStr);
+        sparqlClient.executeUpdateQuery(queryStr, highLoadSparqlEndpoint, true);
     }
 
-    public void appendTaskResultGraph(Task task,
-            DataContainer dataContainer) {
-        var queryParameters = Map.of(
-                "task", task,
-                "dataContainer", dataContainer);
-        var queryStr = queryStore.getQueryWithParameters("appendTaskResultGraph", queryParameters);
+    public void appendTaskResultGraph(Task task, DataContainer dataContainer) {
+        var queryParameters = Map.of("task", task, "dataContainer", dataContainer);
+        var queryStr = queryStore.getQueryWithParameters("appendTaskResultGraph",
+                queryParameters);
         log.debug(queryStr);
-        sparqlClient.executeUpdateQuery(queryStr);
-
+        sparqlClient.executeUpdateQuery(queryStr, highLoadSparqlEndpoint, true);
     }
 
     public List<DataContainer> selectInputContainer(Task task) {
-        String queryTask = queryStore.getQuery("selectInputContainerGraph").formatted(task.getTask());
+        String queryTask = queryStore.getQuery("selectInputContainerGraph")
+                .formatted(task.getTask());
 
         return sparqlClient.executeSelectQuery(queryTask, resultSet -> {
             if (!resultSet.hasNext()) {
                 throw new RuntimeException("Input container graph not found");
             }
             List<DataContainer> graphUris = new ArrayList<>();
-            resultSet.forEachRemaining(r -> graphUris.add(DataContainer.builder()
-                    .graphUri(r.getResource("graph").getURI())
-                    .build()));
+            resultSet.forEachRemaining(
+                    r -> graphUris.add(DataContainer.builder()
+                            .graphUri(r.getResource("graph").getURI())
+                            .build()));
             return graphUris;
-        });
+        }, highLoadSparqlEndpoint, true);
     }
 
     public void appendTaskError(Task task, String message) {
@@ -301,5 +292,4 @@ public class TaskService {
 
         sparqlClient.executeUpdateQuery(queryStr);
     }
-
 }

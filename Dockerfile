@@ -1,13 +1,9 @@
-FROM maven:3.8-openjdk-18 as builder
+FROM maven:3.9-eclipse-temurin-21 as builder
 LABEL maintainer="info@redpencil.io"
 
 WORKDIR /app
 
 COPY pom.xml .
-
-COPY .mvn .mvn
-
-COPY settings.xml settings.xml
 
 RUN mvn verify --fail-never
 
@@ -15,10 +11,10 @@ COPY ./src ./src
 
 RUN mvn package -DskipTests
 
-FROM openjdk:18
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
 COPY --from=builder /app/target/harvesting-diff.jar ./app.jar
 
-ENTRYPOINT [ "java", "-jar","/app/app.jar"]
+ENTRYPOINT ["java", "-XX:+CompactStrings","-jar", "/app/app.jar"]

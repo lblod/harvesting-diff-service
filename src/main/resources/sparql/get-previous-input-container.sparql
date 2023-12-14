@@ -7,28 +7,10 @@ PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
 PREFIX tasko: <http://lblod.data.gift/id/jobs/concept/TaskOperation/>
 PREFIX dlstatus: <http://lblod.data.gift/file-download-statuses/>
 
-SELECT DISTINCT ?path WHERE {
-
-  ?job
-    a cogs:Job ;
-	  adms:status jobst:success .
-
-  ?taskCollecting
-    dct:isPartOf ?job ;
-    task:operation tasko:collecting ;
-    adms:status jobst:success ;
-    task:resultsContainer ?dataContainer .
-
-  ?dataContainer
-    task:hasFile ?remoteDataObject .
-
-  ?remoteDataObject
-    nie:url ?targetUrl ;
-    adms:status dlstatus:collected .
-
-  FILTER (?targetUrl = <${targetUrl}>)
-
+PREFIX prov: <http://www.w3.org/ns/prov#>
+SELECT DISTINCT ?path  WHERE {
   # we only want to grab the previous jobs where data were published.
+  <${targetUrl}> nie:url ?derivedUrl.
   VALUES ?endOperation {
     tasko:publishHarvestedTriples
     tasko:publishHarvestedTriplesWithDeletes
@@ -47,9 +29,11 @@ SELECT DISTINCT ?path WHERE {
   ?inputContainer
     task:hasFile ?file .
 
+   ?file <http://www.w3.org/ns/prov#wasDerivedFrom> ?derived.
+   ?derived nie:url ?fromUrl.
+
   ?path
     nie:dataSource ?file .
 
-  ?remoteDataObject
-    nie:url ?targetUrl .
+  FILTER (?fromUrl = 	?derivedUrl)
 }

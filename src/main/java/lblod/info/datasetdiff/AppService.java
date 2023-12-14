@@ -1,17 +1,20 @@
 package lblod.info.datasetdiff;
 
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-
 import lombok.extern.slf4j.Slf4j;
 import mu.semte.ch.lib.dto.DataContainer;
 import mu.semte.ch.lib.utils.ModelUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
 public class AppService {
     private final TaskService taskService;
+
+    @Value("${sparql.defaultLimitSize}")
+    private int defaultLimitSize;
 
     public AppService(TaskService taskService) {
         this.taskService = taskService;
@@ -31,40 +34,64 @@ public class AppService {
 
         if (Constants.TASK_HARVESTING_DATASET_DIFF.equals(task.getOperation())) {
             try {
+
                 taskService.updateTaskStatus(task, Constants.STATUS_BUSY);
                 var inputContainer = taskService.selectInputContainer(task).get(0);
                 log.info("input container: {}", inputContainer);
-                var importedTriples = taskService.fetchTripleFromFileInputContainer(inputContainer.getGraphUri());
+                var countTriples = taskService.countTriplesFromFileInputContainer(
+                        inputContainer.getGraphUri());
+                var pagesCount = countTriples > defaultLimitSize
+                        ? countTriples / defaultLimitSize
+                        : 1;
+
                 var fileContainer = DataContainer.builder().build();
-                var previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task);
 
-                var newInserts = ModelUtils.difference(importedTriples, previousCompletedModel);
-                var toRemoveOld = ModelUtils.difference(previousCompletedModel, importedTriples);
-                var intersection = ModelUtils.intersection(importedTriples, previousCompletedModel);
+                var graphContainer = DataContainer.builder().build();
+                var resultContainer = DataContainer.builder().graphUri(graphContainer.getUri()).build();
 
-                var dataDiffContainer = fileContainer.toBuilder()
-                        .graphUri(taskService.writeTtlFile(task.getGraph(), newInserts, "new-insert-triples.ttl"))
-                        .build();
-                taskService.appendTaskResultFile(task, dataDiffContainer);
+                for (var i = 0; i <= pagesCount; i++) {
+                    var offset = i * defaultLimitSize;
+                    var importedTriples = taskService.fetchTripleFromFileInputContainer(
+                            inputContainer.getGraphUri(), defaultLimitSize, offset);
+                    for (var mdb : importedTriples) {
+                        var previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task,
+                                mdb.derivedFrom());
+                        var newInserts = ModelUtils.difference(mdb.model(), previousCompletedModel);
+                        var toRemoveOld = ModelUtils.difference(previousCompletedModel, mdb.model());
+                        var intersection = ModelUtils.intersection(mdb.model(), previousCompletedModel);
+                        var dataDiffContainer = fileContainer.toBuilder()
+                                .graphUri(taskService.writeTtlFile(
+                                        task.getGraph(), newInserts, "new-insert-triples.ttl",
+                                        mdb.derivedFrom()))
+                                .build();
+                        taskService.appendTaskResultFile(task, dataDiffContainer);
 
-                var dataRemovalsContainer = fileContainer.toBuilder()
-                        .graphUri(taskService.writeTtlFile(task.getGraph(), toRemoveOld, "to-remove-triples.ttl"))
-                        .build();
-                taskService.appendTaskResultFile(task, dataRemovalsContainer);
-                var dataIntersectContainer = fileContainer
-                        .toBuilder()
-                        .graphUri(taskService.writeTtlFile(task.getGraph(), intersection, "intersect-triples.ttl"))
-                        .build();
-                taskService.appendTaskResultFile(task, dataIntersectContainer);
+                        taskService.appendTaskResultFile(
+                                task, graphContainer.toBuilder()
+                                        .graphUri(dataDiffContainer.getGraphUri())
+                                        .build());
 
-                var dataContainer = DataContainer.builder()
-                        .graphUri(dataDiffContainer.getGraphUri())
-                        .build();
-                taskService.appendTaskResultFile(task, dataContainer);
-                var graphContainer = DataContainer.builder()
-                        .graphUri(dataContainer.getUri())
-                        .build();
-                taskService.appendTaskResultGraph(task, graphContainer);
+                        var dataRemovalsContainer = fileContainer.toBuilder()
+                                .graphUri(taskService.writeTtlFile(
+                                        task.getGraph(), toRemoveOld, "to-remove-triples.ttl",
+                                        mdb.derivedFrom()))
+                                .build();
+                        taskService.appendTaskResultFile(task, dataRemovalsContainer);
+
+                        var dataIntersectContainer = fileContainer.toBuilder()
+                                .graphUri(taskService.writeTtlFile(
+                                        task.getGraph(), intersection, "intersect-triples.ttl",
+                                        mdb.derivedFrom()))
+                                .build();
+                        taskService.appendTaskResultFile(task, dataIntersectContainer);
+                        // var dataContainer = DataContainer.builder()
+                        // .graphUri(dataDiffContainer.getGraphUri())
+                        // .build();
+                        // taskService.appendTaskResultFile(task, dataContainer);
+                    }
+                }
+
+                taskService.appendTaskResultGraph(task, resultContainer);
                 taskService.updateTaskStatus(task, Constants.STATUS_SUCCESS);
                 log.info("Done with success for task {}", task.getId());
             } catch (Throwable e) {
@@ -73,8 +100,8 @@ public class AppService {
                 taskService.appendTaskError(task, e.getMessage());
             }
         } else {
-            log.debug("unknown operation '{}' for delta entry {}", task.getOperation(), deltaEntry);
+            log.debug("unknown operation '{}' for delta entry {}",
+                    task.getOperation(), deltaEntry);
         }
-
     }
 }

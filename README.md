@@ -75,3 +75,4 @@ previously harvested.
 - `MAX_REQUEST_SIZE` : default set to `512MB`
 - `MAX_FILE_SIZE` : default set to `512MB`
 - `TARGET_GRAPH` : default set to `http://mu.semte.ch/application`
+- `HIGH_LOAD_SPARQL_ENDPOINT`:  default set to `http://virtuoso:8890/sparql`

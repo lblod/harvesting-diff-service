@@ -1,0 +1,8 @@
+select (count(distinct ?path) as ?count) where {
+  graph ?g {
+    <${container}> <http://redpencil.data.gift/vocabularies/tasks/hasFile> ?file.
+    ?path <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#dataSource> ?file.
+    ?file <http://www.w3.org/ns/prov#wasDerivedFrom> ?derivedFrom.
+  }
+
+} 
