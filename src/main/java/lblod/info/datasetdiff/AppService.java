@@ -1,7 +1,5 @@
 package lblod.info.datasetdiff;
 
-import static mu.semte.ch.lib.utils.ModelUtils.intersection;
-
 import java.util.ArrayList;
 import lombok.extern.slf4j.Slf4j;
 import mu.semte.ch.lib.dto.DataContainer;
