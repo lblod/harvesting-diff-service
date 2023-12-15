@@ -44,6 +44,8 @@ public class TaskService {
     private int maxRetry;
     @Value("${sparql.highLoadSparqlEndpoint}")
     private String highLoadSparqlEndpoint;
+    @Value("${sparql.defaultPublicationGraphUri}")
+    private String publicGraph;
 
     public TaskService(SparqlQueryStore queryStore, SparqlClient sparqlClient) {
         this.queryStore = queryStore;
@@ -83,7 +85,18 @@ public class TaskService {
         }, highLoadSparqlEndpoint, true);
     }
 
+    public Model fetchTripleByDerivedFrom(String derivedFrom) {
+        log.info("fetch triple by derived from <{}>", derivedFrom);
+        var query = queryStore.getQueryWithParameters(
+                "fetchTriplesByDerivedFrom",
+                Map.of("publicationGraph", publicGraph, "derivedFrom", derivedFrom));
+        var model = sparqlClient.executeSelectQuery(query, highLoadSparqlEndpoint, true);
+        log.info("model len {}", model.size());
+        return model;
+    }
+
     @SneakyThrows
+    @Deprecated
     public Model fetchTripleFromPreviousJobs(Task task, String derivedFrom) {
 
         log.info("fetch triple from previous jobs with derived from {}",

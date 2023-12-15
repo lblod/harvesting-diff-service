@@ -1,5 +1,8 @@
 package lblod.info.datasetdiff;
 
+import static mu.semte.ch.lib.utils.ModelUtils.intersection;
+
+import java.util.ArrayList;
 import lombok.extern.slf4j.Slf4j;
 import mu.semte.ch.lib.dto.DataContainer;
 import mu.semte.ch.lib.utils.ModelUtils;
@@ -50,44 +53,58 @@ public class AppService {
                 var resultContainer = DataContainer.builder().graphUri(graphContainer.getUri()).build();
 
                 for (var i = 0; i <= pagesCount; i++) {
+                    var threads = new ArrayList<Thread>();
+
                     var offset = i * defaultLimitSize;
                     var importedTriples = taskService.fetchTripleFromFileInputContainer(
                             inputContainer.getGraphUri(), defaultLimitSize, offset);
+
                     for (var mdb : importedTriples) {
-                        var previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task,
-                                mdb.derivedFrom());
-                        var newInserts = ModelUtils.difference(mdb.model(), previousCompletedModel);
-                        var toRemoveOld = ModelUtils.difference(previousCompletedModel, mdb.model());
-                        var intersection = ModelUtils.intersection(mdb.model(), previousCompletedModel);
-                        var dataDiffContainer = fileContainer.toBuilder()
-                                .graphUri(taskService.writeTtlFile(
-                                        task.getGraph(), newInserts, "new-insert-triples.ttl",
-                                        mdb.derivedFrom()))
-                                .build();
-                        taskService.appendTaskResultFile(task, dataDiffContainer);
+                        threads.add(Thread.startVirtualThread(() -> {
+                            // var previousCompletedModel =
+                            // taskService.fetchTripleFromPreviousJobs(task,
+                            // mdb.derivedFrom());
+                            var previousCompletedModel = taskService.fetchTripleByDerivedFrom(mdb.derivedFrom());
+                            var newInserts = ModelUtils.difference(mdb.model(), previousCompletedModel);
+                            var toRemoveOld = ModelUtils.difference(previousCompletedModel, mdb.model());
+                            var intersection = ModelUtils.intersection(mdb.model(), previousCompletedModel);
+                            if (!newInserts.isEmpty()) {
+                                var dataDiffContainer = fileContainer.toBuilder()
+                                        .graphUri(taskService.writeTtlFile(
+                                                task.getGraph(), newInserts,
+                                                "new-insert-triples.ttl", mdb.derivedFrom()))
+                                        .build();
+                                taskService.appendTaskResultFile(task, dataDiffContainer);
+                                taskService.appendTaskResultFile(
+                                        task, graphContainer.toBuilder()
+                                                .graphUri(dataDiffContainer.getGraphUri())
+                                                .build());
+                            }
 
-                        taskService.appendTaskResultFile(
-                                task, graphContainer.toBuilder()
-                                        .graphUri(dataDiffContainer.getGraphUri())
-                                        .build());
-
-                        var dataRemovalsContainer = fileContainer.toBuilder()
-                                .graphUri(taskService.writeTtlFile(
-                                        task.getGraph(), toRemoveOld, "to-remove-triples.ttl",
-                                        mdb.derivedFrom()))
-                                .build();
-                        taskService.appendTaskResultFile(task, dataRemovalsContainer);
-
-                        var dataIntersectContainer = fileContainer.toBuilder()
-                                .graphUri(taskService.writeTtlFile(
-                                        task.getGraph(), intersection, "intersect-triples.ttl",
-                                        mdb.derivedFrom()))
-                                .build();
-                        taskService.appendTaskResultFile(task, dataIntersectContainer);
-                        // var dataContainer = DataContainer.builder()
-                        // .graphUri(dataDiffContainer.getGraphUri())
-                        // .build();
-                        // taskService.appendTaskResultFile(task, dataContainer);
+                            if (!toRemoveOld.isEmpty()) {
+                                var dataRemovalsContainer = fileContainer.toBuilder()
+                                        .graphUri(taskService.writeTtlFile(
+                                                task.getGraph(), toRemoveOld,
+                                                "to-remove-triples.ttl", mdb.derivedFrom()))
+                                        .build();
+                                taskService.appendTaskResultFile(task, dataRemovalsContainer);
+                            }
+                            if (!intersection.isEmpty()) {
+                                var dataIntersectContainer = fileContainer.toBuilder()
+                                        .graphUri(taskService.writeTtlFile(
+                                                task.getGraph(), intersection,
+                                                "intersect-triples.ttl", mdb.derivedFrom()))
+                                        .build();
+                                taskService.appendTaskResultFile(task, dataIntersectContainer);
+                            }
+                            // var dataContainer = DataContainer.builder()
+                            // .graphUri(dataDiffContainer.getGraphUri())
+                            // .build();
+                            // taskService.appendTaskResultFile(task, dataContainer);
+                        }));
+                    }
+                    for (var thread : threads) {
+                        thread.join();
                     }
                 }
 

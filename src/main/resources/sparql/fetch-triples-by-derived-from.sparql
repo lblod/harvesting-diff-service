@@ -1,0 +1,7 @@
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+select distinct ?s ?p ?o where {
+  graph <${publicationGraph}> {
+    ?s prov:wasDerivedFrom <${derivedFrom}>; ?p ?o.
+  }
+}

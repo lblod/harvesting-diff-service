@@ -8,6 +8,7 @@ sparql:
   endpoint: ${SPARQL_ENDPOINT:http://database:8890/sparql}
   highLoadSparqlEndpoint: ${HIGH_LOAD_SPARQL_ENDPOINT:http://virtuoso:8890/sparql}
   defaultGraphUri: ${TARGET_GRAPH:http://mu.semte.ch/application}
+  defaultPublicationGraphUri: ${PUBLICATION_GRAPH:http://mu.semte.ch/graphs/public}
   defaultBatchSize: ${BATCH_SIZE:100}
   defaultLimitSize: ${LIMIT_SIZE:100}
   maxRetry: ${MAX_RETRY:5}
