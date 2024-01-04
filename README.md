@@ -4,9 +4,15 @@ Look at previous completed jobs and check if the target url for the ongoing job 
 If so, build a model of all previously completed jobs from the result files of the mirroring step,
 and compare it to the model of the result files for this ongoing job.
 
-Generate a result graph with only the new triples, and an intersection file with all  triples that were
-previously harvested. 
+Generate a result graph with only the new triples, and an intersection file with all triples that were
+previously harvested.
 
+## !IMPORTANT
+
+Version 0.2.x and onward introduces the split files feature (each downloaded pages is treated as a separate model),
+major breaking changes with 0.1.x are expected.
+
+If you don't use the latest version of the harvester (master branch), please do not upgrade.
 
 ## Setup using docker-compose
 
@@ -55,7 +61,6 @@ previously harvested.
 
 - add job controller config step:
 
-
 ```js
       {
         "currentOperation": "http://lblod.data.gift/id/jobs/concept/TaskOperation/diff",
@@ -75,4 +80,4 @@ previously harvested.
 - `MAX_REQUEST_SIZE` : default set to `512MB`
 - `MAX_FILE_SIZE` : default set to `512MB`
 - `TARGET_GRAPH` : default set to `http://mu.semte.ch/application`
-- `HIGH_LOAD_SPARQL_ENDPOINT`:  default set to `http://virtuoso:8890/sparql`
+- `HIGH_LOAD_SPARQL_ENDPOINT`: default set to `http://virtuoso:8890/sparql`
