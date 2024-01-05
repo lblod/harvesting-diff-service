@@ -44,6 +44,8 @@ public class TaskService {
     private int maxRetry;
     @Value("${sparql.highLoadSparqlEndpoint}")
     private String highLoadSparqlEndpoint;
+    @Value("${sparql.endpoint}")
+    private String defaultSparqlEndpoint;
 
     public TaskService(SparqlQueryStore queryStore, SparqlClient sparqlClient) {
         this.queryStore = queryStore;
@@ -207,7 +209,7 @@ public class TaskService {
         String queryUpdate = queryStore.getQuery("updateTaskStatus")
                 .formatted(status, formattedDate(LocalDateTime.now()),
                         task.getTask());
-        sparqlClient.executeUpdateQuery(queryUpdate);
+        sparqlClient.executeUpdateQuery(queryUpdate, defaultSparqlEndpoint, true);
     }
 
     @SneakyThrows
@@ -292,6 +294,6 @@ public class TaskService {
                 ofNullable(message).orElse("Unexpected error"));
         var queryStr = queryStore.getQueryWithParameters("appendTaskError", parameters);
 
-        sparqlClient.executeUpdateQuery(queryStr);
+        sparqlClient.executeUpdateQuery(queryStr, defaultSparqlEndpoint, true);
     }
 }
