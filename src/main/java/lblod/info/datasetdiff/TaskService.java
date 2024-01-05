@@ -283,6 +283,8 @@ public class TaskService {
     }
 
     public void appendTaskError(Task task, String message) {
+        log.info("writing error '{}', to task {} for job {}", message, task.getId(),
+                task.getJob());
         var id = uuid();
         var uri = Constants.ERROR_URI_PREFIX + id;
 
