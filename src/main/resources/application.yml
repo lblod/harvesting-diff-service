@@ -11,7 +11,8 @@ sparql:
   defaultBatchSize: ${BATCH_SIZE:100}
   defaultLimitSize: ${LIMIT_SIZE:100}
   maxRetry: ${MAX_RETRY:5}
-
+  queryStore:
+      path: ${SPARQL_QUERYSTORE_PATH:classpath*:sparql}
 spring:
   servlet:
     multipart:
