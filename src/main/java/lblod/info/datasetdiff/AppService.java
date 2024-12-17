@@ -50,6 +50,7 @@ public class AppService {
                 var graphContainer = DataContainer.builder().build();
                 var resultContainer = DataContainer.builder().graphUri(graphContainer.getUri()).build();
 
+                var sleepMs = 50;
                 for (var i = 0; i <= pagesCount; i++) {
                     var threads = new ArrayList<Thread>();
                     var offset = i * defaultLimitSize;
@@ -59,6 +60,12 @@ public class AppService {
                         threads.add(Thread.startVirtualThread(() -> {
                             var previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task,
                                     mdb.derivedFrom());
+                            try {
+                                log.info("sleep for {} ms to let virtuoso breathe", sleepMs);
+                                Thread.sleep(sleepMs);
+                            } catch (Throwable e) {
+                                log.error("could not sleep", e);
+                            }
                             var newInserts = ModelUtils.difference(mdb.model(), previousCompletedModel);
                             var toRemoveOld = ModelUtils.difference(previousCompletedModel, mdb.model());
                             var intersection = ModelUtils.intersection(mdb.model(), previousCompletedModel);
@@ -92,6 +99,9 @@ public class AppService {
                                 taskService.appendTaskResultFile(task, dataIntersectContainer);
                             }
                         }));
+                        log.info("sleep for {} ms to let virtuoso breathe", sleepMs);
+                        Thread.sleep(sleepMs);
+
                     }
                     for (var thread : threads) {
                         thread.join();

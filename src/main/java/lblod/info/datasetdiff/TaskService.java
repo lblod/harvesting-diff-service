@@ -175,7 +175,6 @@ public class TaskService {
     }
 
     @SneakyThrows
-    @Deprecated
     public Model fetchTripleFromFilePath(String path) {
 
         var file = ofNullable(path)
