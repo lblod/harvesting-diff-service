@@ -99,7 +99,12 @@ public class AppService {
                                 taskService.appendTaskResultFile(task, dataIntersectContainer);
                             }
                         }));
-                        log.info("sleep for {} ms to let virtuoso breathe", sleepMs);
+                        try {
+                            log.info("sleep for {} ms to let virtuoso breathe", sleepMs);
+                            Thread.sleep(sleepMs);
+                        } catch (Throwable e) {
+                            log.error("could not sleep", e);
+                        }
                         Thread.sleep(sleepMs);
 
                     }
