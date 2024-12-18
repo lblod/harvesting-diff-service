@@ -50,7 +50,7 @@ public class AppService {
                 var graphContainer = DataContainer.builder().build();
                 var resultContainer = DataContainer.builder().graphUri(graphContainer.getUri()).build();
 
-                var sleepMs = 50;
+                var sleepMs = 25;
                 for (var i = 0; i <= pagesCount; i++) {
                     var threads = new ArrayList<Thread>();
                     var offset = i * defaultLimitSize;
