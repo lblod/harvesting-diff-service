@@ -3,7 +3,8 @@ server:
 
 share-folder:
   path: ${SHARE_FOLDER_DIRECTORY:/share}
-
+application:
+  sleepBetweenJob: ${SLEEP_BETWEEN_JOB_MS:100}
 sparql:
   endpoint: ${SPARQL_ENDPOINT:http://database:8890/sparql}
   highLoadSparqlEndpoint: ${HIGH_LOAD_SPARQL_ENDPOINT:http://virtuoso:8890/sparql}
@@ -12,7 +13,7 @@ sparql:
   defaultLimitSize: ${LIMIT_SIZE:100}
   maxRetry: ${MAX_RETRY:5}
   queryStore:
-      path: ${SPARQL_QUERYSTORE_PATH:classpath*:sparql}
+    path: ${SPARQL_QUERYSTORE_PATH:classpath*:sparql}
 spring:
   servlet:
     multipart:

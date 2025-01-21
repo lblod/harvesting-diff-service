@@ -1,6 +1,7 @@
 package lblod.info.datasetdiff;
 
 import java.util.ArrayList;
+
 import lombok.extern.slf4j.Slf4j;
 import mu.semte.ch.lib.dto.DataContainer;
 import mu.semte.ch.lib.utils.ModelUtils;
@@ -13,6 +14,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class AppService {
     private final TaskService taskService;
+    @Value("${application.sleepBetweenJob}")
+    private int sleepMs;
+
+    private void sleep(int sleepMs) {
+        try {
+            log.info("sleep for {} ms to let virtuoso breathe", sleepMs);
+            Thread.sleep(sleepMs);
+        } catch (Throwable e) {
+            log.error("could not sleep", e);
+        }
+    };
 
     @Value("${sparql.defaultLimitSize}")
     private int defaultLimitSize;
@@ -50,7 +62,6 @@ public class AppService {
                 var graphContainer = DataContainer.builder().build();
                 var resultContainer = DataContainer.builder().graphUri(graphContainer.getUri()).build();
 
-                var sleepMs = 25;
                 for (var i = 0; i <= pagesCount; i++) {
                     var threads = new ArrayList<Thread>();
                     var offset = i * defaultLimitSize;
@@ -60,12 +71,7 @@ public class AppService {
                         threads.add(Thread.startVirtualThread(() -> {
                             var previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task,
                                     mdb.derivedFrom());
-                            try {
-                                log.info("sleep for {} ms to let virtuoso breathe", sleepMs);
-                                Thread.sleep(sleepMs);
-                            } catch (Throwable e) {
-                                log.error("could not sleep", e);
-                            }
+                            sleep(sleepMs);
                             var newInserts = ModelUtils.difference(mdb.model(), previousCompletedModel);
                             var toRemoveOld = ModelUtils.difference(previousCompletedModel, mdb.model());
                             var intersection = ModelUtils.intersection(mdb.model(), previousCompletedModel);
@@ -99,14 +105,7 @@ public class AppService {
                                 taskService.appendTaskResultFile(task, dataIntersectContainer);
                             }
                         }));
-                        try {
-                            log.info("sleep for {} ms to let virtuoso breathe", sleepMs);
-                            Thread.sleep(sleepMs);
-                        } catch (Throwable e) {
-                            log.error("could not sleep", e);
-                        }
-                        Thread.sleep(sleepMs);
-
+                        sleep(sleepMs);
                     }
                     for (var thread : threads) {
                         thread.join();
