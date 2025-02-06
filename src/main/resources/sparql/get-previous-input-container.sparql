@@ -6,9 +6,9 @@ PREFIX jobst: <http://redpencil.data.gift/id/concept/JobStatus/>
 PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
 PREFIX tasko: <http://lblod.data.gift/id/jobs/concept/TaskOperation/>
 PREFIX dlstatus: <http://lblod.data.gift/file-download-statuses/>
-
 PREFIX prov: <http://www.w3.org/ns/prov#>
-SELECT DISTINCT ?path  WHERE {
+
+SELECT DISTINCT ?path WHERE {
   # we only want to grab the previous jobs where data were published.
   <${targetUrl}> nie:url ?derivedUrl.
   VALUES ?endOperation {
@@ -18,7 +18,8 @@ SELECT DISTINCT ?path  WHERE {
   ?taskPublishing
     dct:isPartOf ?job ;
     task:operation ?endOperation ;
-    adms:status jobst:success .
+    adms:status jobst:success ;
+    dct:created ?created.
 
   ?taskDiff
     dct:isPartOf ?job ;
@@ -29,11 +30,13 @@ SELECT DISTINCT ?path  WHERE {
   ?inputContainer
     task:hasFile ?file .
 
-   ?file <http://www.w3.org/ns/prov#wasDerivedFrom> ?derived.
-   ?derived nie:url ?fromUrl.
+  ?file prov:wasDerivedFrom ?derived.
+  ?derived nie:url ?fromUrl.
 
   ?path
     nie:dataSource ?file .
 
-  FILTER (?fromUrl = 	?derivedUrl)
+  FILTER (?fromUrl = ?derivedUrl)
 }
+ORDER BY DESC(?created)
+LIMIT 1
