@@ -38,12 +38,13 @@ public class AppService {
 
             if (!taskService.isTask(deltaEntry))
                 return;
-            var task = taskService.loadTask(deltaEntry);
+            var taskWithJobId = taskService.loadTask(deltaEntry);
 
-            if (task == null || StringUtils.isEmpty(task.getOperation())) {
+            if (taskWithJobId == null || StringUtils.isEmpty(taskWithJobId.task().getOperation())) {
                 log.debug("task or operation is empty for delta entry {}", deltaEntry);
                 return;
             }
+            var task =taskWithJobId.task();
 
             if (Constants.TASK_HARVESTING_DATASET_DIFF.equals(task.getOperation())) {
                 try {
@@ -79,7 +80,7 @@ public class AppService {
                                     var dataDiffContainer = fileContainer.toBuilder()
                                             .graphUri(taskService.writeTtlFile(
                                                     task.getGraph(), newInserts,
-                                                    "new-insert-triples.ttl", mdb.derivedFrom()))
+                                                    "new-insert-triples.ttl", mdb.derivedFrom(), taskWithJobId.jobId()))
                                             .build();
                                     taskService.appendTaskResultFile(task, dataDiffContainer);
 
@@ -92,7 +93,7 @@ public class AppService {
                                     var dataRemovalsContainer = fileContainer.toBuilder()
                                             .graphUri(taskService.writeTtlFile(
                                                     task.getGraph(), toRemoveOld,
-                                                    "to-remove-triples.ttl", mdb.derivedFrom()))
+                                                    "to-remove-triples.ttl", mdb.derivedFrom(), taskWithJobId.jobId()))
                                             .build();
                                     taskService.appendTaskResultFile(task, dataRemovalsContainer);
                                 }
@@ -100,7 +101,7 @@ public class AppService {
                                     var dataIntersectContainer = fileContainer.toBuilder()
                                             .graphUri(taskService.writeTtlFile(
                                                     task.getGraph(), intersection,
-                                                    "intersect-triples.ttl", mdb.derivedFrom()))
+                                                    "intersect-triples.ttl", mdb.derivedFrom(), taskWithJobId.jobId()))
                                             .build();
                                     taskService.appendTaskResultFile(task, dataIntersectContainer);
                                 }
