@@ -223,7 +223,8 @@ public class TaskService {
         var phyId = uuid();
         var phyFilename = "%s.%s".formatted(baseFolder, fileExtension);
         var path = "%s/%s".formatted(shareFolderPath, phyFilename);
-        var physicalFile = "share://%s".formatted(phyFilename);
+        var physicalFile = "share://%s".formatted(baseFolder.replace("/share/", "") + phyFilename);
+
         var loId = uuid();
         var logicalFile = "%s/%s".formatted(Constants.LOGICAL_FILE_PREFIX, loId);
         var now = formattedDate(LocalDateTime.now());
