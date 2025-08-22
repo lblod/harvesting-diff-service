@@ -222,7 +222,7 @@ public class TaskService {
         rootDir.mkdirs();
         var phyId = uuid();
         var phyFilename = "%s.%s".formatted(phyId, fileExtension);
-        var path = "%s/%s".formatted(shareFolderPath, phyFilename);
+        var path = "%s/%s".formatted(baseFolder, phyFilename);
         var physicalFile = "share://%s".formatted(baseFolder.replace("/share/", "") + "/" + phyFilename);
 
         var loId = uuid();
