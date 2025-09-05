@@ -31,7 +31,9 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class TaskService {
-    public record TaskWithJobId(Task task, String jobId) {}
+    public record TaskWithJobId(Task task, String jobId) {
+    }
+
     private final SparqlQueryStore queryStore;
     private final SparqlClient sparqlClient;
     @Value("${share-folder.path}")
@@ -79,7 +81,7 @@ public class TaskService {
                     .index(t.getLiteral("index").getString())
                     .graph(t.getResource("graph").getURI())
                     .status(t.getResource("status").getURI())
-                    .build(),t.getLiteral("jobId").getString());
+                    .build(), t.getLiteral("jobId").getString());
             log.debug("task: {}", task);
             return task;
         }, highLoadSparqlEndpoint, true);
@@ -219,7 +221,9 @@ public class TaskService {
         var contentType = getContentType(rdfLang);
         var baseFolder = "%s/%s/diff".formatted(shareFolderPath, folderId);
         var rootDir = new File(baseFolder);
-        rootDir.mkdirs();
+        if (!rootDir.mkdirs() && !rootDir.exists()) {
+            throw new RuntimeException("Failed to create directory: " + baseFolder);
+        }
         var phyId = uuid();
         var phyFilename = "%s.%s".formatted(phyId, fileExtension);
         var path = "%s/%s".formatted(baseFolder, phyFilename);
