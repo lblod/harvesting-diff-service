@@ -31,6 +31,8 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class TaskService {
+    public record TaskWithJobId(Task task, String jobId) {
+    }
 
     private final SparqlQueryStore queryStore;
     private final SparqlClient sparqlClient;
@@ -58,15 +60,15 @@ public class TaskService {
         return sparqlClient.executeAskQuery(queryStr, highLoadSparqlEndpoint, true);
     }
 
-    public Task loadTask(String deltaEntry) {
+    public TaskWithJobId loadTask(String deltaEntry) {
         String queryTask = queryStore.getQuery("loadTask").formatted(deltaEntry);
 
         return sparqlClient.executeSelectQuery(queryTask, resultSet -> {
             if (!resultSet.hasNext()) {
-                return null;
+                return new TaskWithJobId(null, null);
             }
             var t = resultSet.next();
-            Task task = Task.builder()
+            var task = new TaskWithJobId(Task.builder()
                     .task(t.getResource("task").getURI())
                     .job(t.getResource("job").getURI())
                     .error(ofNullable(t.getResource("error"))
@@ -79,7 +81,7 @@ public class TaskService {
                     .index(t.getLiteral("index").getString())
                     .graph(t.getResource("graph").getURI())
                     .status(t.getResource("status").getURI())
-                    .build();
+                    .build(), t.getLiteral("jobId").getString());
             log.debug("task: {}", task);
             return task;
         }, highLoadSparqlEndpoint, true);
@@ -213,14 +215,20 @@ public class TaskService {
 
     @SneakyThrows
     public String writeTtlFile(String graph, Model content,
-            String logicalFileName, String derivedFrom) {
+            String logicalFileName, String derivedFrom, String folderId) {
         var rdfLang = filenameToLang(logicalFileName);
         var fileExtension = getExtension(rdfLang);
         var contentType = getContentType(rdfLang);
+        var baseFolder = "%s/%s/diff".formatted(shareFolderPath, folderId);
+        var rootDir = new File(baseFolder);
+        if (!rootDir.mkdirs() && !rootDir.exists()) {
+            throw new RuntimeException("Failed to create directory: " + baseFolder);
+        }
         var phyId = uuid();
         var phyFilename = "%s.%s".formatted(phyId, fileExtension);
-        var path = "%s/%s".formatted(shareFolderPath, phyFilename);
-        var physicalFile = "share://%s".formatted(phyFilename);
+        var path = "%s/%s".formatted(baseFolder, phyFilename);
+        var physicalFile = "share://%s".formatted(baseFolder.replace("/share/", "") + "/" + phyFilename);
+
         var loId = uuid();
         var logicalFile = "%s/%s".formatted(Constants.LOGICAL_FILE_PREFIX, loId);
         var now = formattedDate(LocalDateTime.now());
