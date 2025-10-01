@@ -17,4 +17,4 @@ WORKDIR /app
 
 COPY --from=builder /app/target/harvesting-diff.jar ./app.jar
 
-ENTRYPOINT ["java", "-XX:+UseCompactObjectHeaders","-XX:+UseZGC","-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "-XX:+UseCompactObjectHeaders","-jar", "/app/app.jar"]
