@@ -1,4 +1,4 @@
-FROM maven:3.9-eclipse-temurin-21 AS builder
+FROM maven:3.9-eclipse-temurin-25 AS builder
 LABEL maintainer="info@redpencil.io"
 
 WORKDIR /app
@@ -11,10 +11,10 @@ COPY ./src ./src
 
 RUN mvn package -DskipTests
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 
 WORKDIR /app
 
 COPY --from=builder /app/target/harvesting-diff.jar ./app.jar
 
-ENTRYPOINT ["java", "-XX:+CompactStrings","-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "-XX:+UseCompactObjectHeaders","-XX:+UseZGC","-jar", "/app/app.jar"]

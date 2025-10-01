@@ -1,7 +1,6 @@
 package lblod.info.datasetdiff;
 
 import java.util.List;
-import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import mu.semte.ch.lib.dto.Delta;
 import org.springframework.http.ResponseEntity;
@@ -9,34 +8,36 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @Slf4j
 public class AppController {
-  private final AppService appService;
+    private final AppService appService;
 
-  public AppController(AppService appService) {
-    this.appService = appService;
-  }
-
-  @PostMapping("/delta")
-  public ResponseEntity<Void> delta(@RequestBody List<Delta> deltas,
-      HttpServletRequest request) {
-    var entries = deltas.stream()
-        .findFirst()
-        .map(delta -> delta.getInsertsFor(Constants.SUBJECT_STATUS,
-            Constants.STATUS_SCHEDULED))
-        .orElseGet(List::of);
-
-    if (entries.isEmpty()) {
-      log.warn(
-          "Delta did not contain potential tasks that are ready for filtering, awaiting the next batch!");
-
-      return ResponseEntity.noContent().build();
+    public AppController(AppService appService) {
+        this.appService = appService;
     }
 
-    // NOTE: we don't wait as we do not want to keep hold off the connection.
-    entries.forEach(appService::runAsync);
+    @PostMapping("/delta")
+    public ResponseEntity<Void> delta(@RequestBody List<Delta> deltas,
+            HttpServletRequest request) {
+        var entries = deltas.stream()
+                .findFirst()
+                .map(delta -> delta.getInsertsFor(Constants.SUBJECT_STATUS,
+                        Constants.STATUS_SCHEDULED))
+                .orElseGet(List::of);
 
-    return ResponseEntity.ok().build();
-  }
+        if (entries.isEmpty()) {
+            log.warn(
+                    "Delta did not contain potential tasks that are ready for filtering, awaiting the next batch!");
+
+            return ResponseEntity.noContent().build();
+        }
+
+        // NOTE: we don't wait as we do not want to keep hold off the connection.
+        entries.forEach(appService::runAsync);
+
+        return ResponseEntity.ok().build();
+    }
 }

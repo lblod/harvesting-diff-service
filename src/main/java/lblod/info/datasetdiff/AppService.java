@@ -44,7 +44,7 @@ public class AppService {
                 log.debug("task or operation is empty for delta entry {}", deltaEntry);
                 return;
             }
-            var task =taskWithJobId.task();
+            var task = taskWithJobId.task();
 
             if (Constants.TASK_HARVESTING_DATASET_DIFF.equals(task.getOperation())) {
                 try {
@@ -69,10 +69,18 @@ public class AppService {
                         var importedTriples = taskService.fetchTripleFromFileInputContainer(
                                 inputContainer.getGraphUri(), defaultLimitSize, offset);
                         for (var mdb : importedTriples) {
+                            if (threads.size() >= Runtime.getRuntime().availableProcessors()) {
+                                // optimization: virtuoso can't catch up, therefore limit number of
+                                // virtual threads created at the same time
+                                for (var thread : threads) {
+                                    thread.join();
+                                }
+                                threads.clear();
+
+                            }
                             threads.add(Thread.startVirtualThread(() -> {
                                 var previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task,
                                         mdb.derivedFrom());
-                                sleep(sleepMs);
                                 var newInserts = ModelUtils.difference(mdb.model(), previousCompletedModel);
                                 var toRemoveOld = ModelUtils.difference(previousCompletedModel, mdb.model());
                                 var intersection = ModelUtils.intersection(mdb.model(), previousCompletedModel);

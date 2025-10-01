@@ -1,8 +1,6 @@
 // Source code is decompiled from a .class file using FernFlower decompiler.
 package lblod.info.datasetdiff;
 
-import com.github.jsonldjava.shaded.com.google.common.collect.Maps;
-
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -33,11 +31,11 @@ public class DatasetDiffApplication {
     @Bean
     public SparqlQueryStore sparqlQueryLoader() {
         log.info("Adding {} queries to the store", this.queries.length);
-        Map<String, String> queriesMap = (Map) Arrays.stream(this.queries).map((r) -> {
+        Map<String, String> queriesMap = Arrays.asList(this.queries).stream().map((r) -> {
             try {
                 String key = CaseUtils.toCamelCase(FilenameUtils.removeExtension(r.getFilename()), false,
                         new char[] { '-' });
-                return Maps.immutableEntry(key, IOUtils.toString(r.getInputStream(), StandardCharsets.UTF_8));
+                return Map.entry(key, IOUtils.toString(r.getInputStream(), StandardCharsets.UTF_8));
             } catch (IOException var2) {
                 throw new RuntimeException(var2);
             }
