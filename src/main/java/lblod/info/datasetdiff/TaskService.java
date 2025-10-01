@@ -210,6 +210,7 @@ public class TaskService {
         String queryUpdate = queryStore.getQuery("updateTaskStatus")
                 .formatted(status, formattedDate(LocalDateTime.now()),
                         task.getTask());
+        log.debug("sparql endpoint {}", defaultSparqlEndpoint);
         sparqlClient.executeUpdateQuery(queryUpdate, defaultSparqlEndpoint, true);
     }
 
