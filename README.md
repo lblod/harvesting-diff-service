@@ -72,7 +72,6 @@ If you don't use the latest version of the harvester (master branch), please do 
 
 ## Environment variables
 
-- `SLEEP_BETWEEN_JOB_MS`: time to wait before running a new batch (default to `100`)
 - `SERVER_PORT` : default set to `80`
 - `SHARE_FOLDER_DIRECTORY`: default set to `/share`
 - `BATCH_SIZE` : default set to `100`

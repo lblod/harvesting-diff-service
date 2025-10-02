@@ -1,6 +1,7 @@
 package lblod.info.datasetdiff;
 
 import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
 import lombok.extern.slf4j.Slf4j;
 import mu.semte.ch.lib.dto.DataContainer;
@@ -13,9 +14,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class AppService {
     private final TaskService taskService;
-    @Value("${application.sleepBetweenJob}")
-    private int sleepMs;
 
+    @SuppressWarnings("unused")
     private void sleep(int sleepMs) {
         try {
             log.info("sleep for {} ms to let virtuoso breathe", sleepMs);
@@ -40,7 +40,8 @@ public class AppService {
                 return;
             var taskWithJobId = taskService.loadTask(deltaEntry);
 
-            if (taskWithJobId == null || StringUtils.isEmpty(taskWithJobId.task().getOperation())) {
+            if (taskWithJobId == null || taskWithJobId.task() == null
+                    || StringUtils.isEmpty(taskWithJobId.task().getOperation())) {
                 log.debug("task or operation is empty for delta entry {}", deltaEntry);
                 return;
             }
@@ -65,56 +66,63 @@ public class AppService {
 
                     for (var i = 0; i <= pagesCount; i++) {
                         var threads = new ArrayList<Thread>();
+                        var semaphore = new Semaphore(Runtime.getRuntime().availableProcessors());
                         var offset = i * defaultLimitSize;
                         var importedTriples = taskService.fetchTripleFromFileInputContainer(
                                 inputContainer.getGraphUri(), defaultLimitSize, offset);
                         for (var mdb : importedTriples) {
-                            if (threads.size() >= Runtime.getRuntime().availableProcessors()) {
-                                // optimization: virtuoso can't catch up, therefore limit number of
-                                // virtual threads created at the same time
-                                for (var thread : threads) {
-                                    thread.join();
-                                }
-                                threads.clear();
 
-                            }
                             threads.add(Thread.startVirtualThread(() -> {
-                                var previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task,
-                                        mdb.derivedFrom());
-                                var newInserts = ModelUtils.difference(mdb.model(), previousCompletedModel);
-                                var toRemoveOld = ModelUtils.difference(previousCompletedModel, mdb.model());
-                                var intersection = ModelUtils.intersection(mdb.model(), previousCompletedModel);
-                                if (!newInserts.isEmpty()) {
-                                    var dataDiffContainer = fileContainer.toBuilder()
-                                            .graphUri(taskService.writeTtlFile(
-                                                    task.getGraph(), newInserts,
-                                                    "new-insert-triples.ttl", mdb.derivedFrom(), taskWithJobId.jobId()))
-                                            .build();
-                                    taskService.appendTaskResultFile(task, dataDiffContainer);
+                                try {
+                                    // optimization: virtuoso can't catch up, therefore limit number of
+                                    // tasks running at the same time
+                                    semaphore.acquire();
 
-                                    taskService.appendTaskResultFile(
-                                            task, graphContainer.toBuilder()
-                                                    .graphUri(dataDiffContainer.getGraphUri())
-                                                    .build());
-                                }
-                                if (!toRemoveOld.isEmpty()) {
-                                    var dataRemovalsContainer = fileContainer.toBuilder()
-                                            .graphUri(taskService.writeTtlFile(
-                                                    task.getGraph(), toRemoveOld,
-                                                    "to-remove-triples.ttl", mdb.derivedFrom(), taskWithJobId.jobId()))
-                                            .build();
-                                    taskService.appendTaskResultFile(task, dataRemovalsContainer);
-                                }
-                                if (!intersection.isEmpty()) {
-                                    var dataIntersectContainer = fileContainer.toBuilder()
-                                            .graphUri(taskService.writeTtlFile(
-                                                    task.getGraph(), intersection,
-                                                    "intersect-triples.ttl", mdb.derivedFrom(), taskWithJobId.jobId()))
-                                            .build();
-                                    taskService.appendTaskResultFile(task, dataIntersectContainer);
+                                    var previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task,
+                                            mdb.derivedFrom());
+                                    var newInserts = ModelUtils.difference(mdb.model(), previousCompletedModel);
+                                    var toRemoveOld = ModelUtils.difference(previousCompletedModel, mdb.model());
+                                    var intersection = ModelUtils.intersection(mdb.model(), previousCompletedModel);
+                                    if (!newInserts.isEmpty()) {
+                                        var dataDiffContainer = fileContainer.toBuilder()
+                                                .graphUri(taskService.writeTtlFile(
+                                                        task.getGraph(), newInserts,
+                                                        "new-insert-triples.ttl", mdb.derivedFrom(),
+                                                        taskWithJobId.jobId()))
+                                                .build();
+                                        taskService.appendTaskResultFile(task, dataDiffContainer);
+
+                                        taskService.appendTaskResultFile(
+                                                task, graphContainer.toBuilder()
+                                                        .graphUri(dataDiffContainer.getGraphUri())
+                                                        .build());
+                                    }
+                                    if (!toRemoveOld.isEmpty()) {
+                                        var dataRemovalsContainer = fileContainer.toBuilder()
+                                                .graphUri(taskService.writeTtlFile(
+                                                        task.getGraph(), toRemoveOld,
+                                                        "to-remove-triples.ttl", mdb.derivedFrom(),
+                                                        taskWithJobId.jobId()))
+                                                .build();
+                                        taskService.appendTaskResultFile(task, dataRemovalsContainer);
+                                    }
+                                    if (!intersection.isEmpty()) {
+                                        var dataIntersectContainer = fileContainer.toBuilder()
+                                                .graphUri(taskService.writeTtlFile(
+                                                        task.getGraph(), intersection,
+                                                        "intersect-triples.ttl", mdb.derivedFrom(),
+                                                        taskWithJobId.jobId()))
+                                                .build();
+                                        taskService.appendTaskResultFile(task, dataIntersectContainer);
+                                    }
+                                } catch (Exception e) {
+                                    log.error("something has failed while processing the task", e);
+                                    throw new RuntimeException(e);
+
+                                } finally {
+                                    semaphore.release();
                                 }
                             }));
-                            sleep(sleepMs);
                         }
                         for (var thread : threads) {
                             thread.join();
