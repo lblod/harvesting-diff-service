@@ -14,7 +14,7 @@
 	<description>Takes two datasets and returns only the difference </description>
 	<properties>
 		<java.version>24</java.version>
-		<mu-java.version>1.5.1</mu-java.version>
+		<mu-java.version>1.5.2</mu-java.version>
 		<lombok.version>1.18.42</lombok.version>
 		<jena.version>5.5.0</jena.version>
 	</properties>
