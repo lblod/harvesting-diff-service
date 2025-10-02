@@ -64,9 +64,9 @@ public class AppService {
                     var graphContainer = DataContainer.builder().build();
                     var resultContainer = DataContainer.builder().graphUri(graphContainer.getUri()).build();
 
+                    var semaphore = new Semaphore(Runtime.getRuntime().availableProcessors());
                     for (var i = 0; i <= pagesCount; i++) {
                         var threads = new ArrayList<Thread>();
-                        var semaphore = new Semaphore(Runtime.getRuntime().availableProcessors());
                         var offset = i * defaultLimitSize;
                         var importedTriples = taskService.fetchTripleFromFileInputContainer(
                                 inputContainer.getGraphUri(), defaultLimitSize, offset);
@@ -74,6 +74,7 @@ public class AppService {
 
                             threads.add(Thread.startVirtualThread(() -> {
                                 try {
+                                    log.info("acquiring lock...");
                                     // optimization: virtuoso can't catch up, therefore limit number of
                                     // tasks running at the same time
                                     semaphore.acquire();
