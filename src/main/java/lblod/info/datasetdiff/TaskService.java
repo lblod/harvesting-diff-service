@@ -61,7 +61,7 @@ public class TaskService {
     }
 
     public void markFilesAsSensitive(String targetUrl) {
-        var markSensitiveFileQuery = queryStore.getQueryWithParameters("markSensitiveFile", Map.of("derivedFrom", targetUrl));
+        var markSensitiveFileQuery = queryStore.getQueryWithParameters("markSensitiveFile", Map.of("derivedUrl", targetUrl));
         sparqlClient.executeUpdateQuery(markSensitiveFileQuery, highLoadSparqlEndpoint, true);
 
     }
