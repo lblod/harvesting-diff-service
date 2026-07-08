@@ -36,4 +36,4 @@ SELECT DISTINCT ?path  WHERE {
 
   FILTER (?fromUrl = ?derivedUrl)
   FILTER (?derivedUrl = <${derivedUrl}>)
-} limit 4
+}

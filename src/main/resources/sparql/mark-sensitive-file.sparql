@@ -1,20 +1,47 @@
-PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
 PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
-PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX cogs: <http://vocab.deri.ie/cogs#>
+PREFIX adms: <http://www.w3.org/ns/adms#>
+PREFIX jobst: <http://redpencil.data.gift/id/concept/JobStatus/>
+PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
+PREFIX tasko: <http://lblod.data.gift/id/jobs/concept/TaskOperation/>
+PREFIX dlstatus: <http://lblod.data.gift/file-download-statuses/>
 
+PREFIX prov: <http://www.w3.org/ns/prov#>
 INSERT {
     GRAPH ?g {
-        ?logicalFile ext:flagged "flagged as containing sensitive data".
-        ?physicalFile ext:flagged "flagged as containing sensitive data" .
+        ?path ext:flagged "flagged as containing sensitive data".
     }
 }
 WHERE {
-    GRAPH ?g {
-        ?logicalFile a nfo:FileDataObject ;
-            prov:wasDerivedFrom <${derivedFrom}> .
-        ?physicalFile a nfo:FileDataObject ;
-            nie:dataSource ?logicalFile ;
-            nfo:fileName ?oldPhysicalFileName .
-    }
-}
+ GRAPH ?g {
+
+  ?container nie:url ?derivedUrl.
+  VALUES ?endOperation {
+    tasko:publishHarvestedTriples
+    tasko:publishHarvestedTriplesWithDeletes
+  }
+  ?taskPublishing
+    dct:isPartOf ?job ;
+    task:operation ?endOperation ;
+    adms:status jobst:success .
+
+  ?taskDiff
+    dct:isPartOf ?job ;
+    task:operation tasko:diff ;
+    adms:status jobst:success ;
+    task:inputContainer ?inputContainer .
+
+  ?inputContainer
+    task:hasFile ?file .
+
+   ?file <http://www.w3.org/ns/prov#wasDerivedFrom> ?derived.
+   ?derived nie:url ?fromUrl.
+
+  ?path
+    nie:dataSource ?file .
+
+  FILTER (?fromUrl = ?derivedUrl)
+  FILTER (?derivedUrl = <${derivedUrl}>)
+}}
