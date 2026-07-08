@@ -65,7 +65,7 @@ public class TaskService {
         sparqlClient.executeUpdateQuery(markSensitiveFileQuery, highLoadSparqlEndpoint, true);
 
     }
-    
+
     public record DerivedSensitiveData(String derivedUrl, Model aggregate) {}
     public DerivedSensitiveData fetchModelWithSensitiveData(TaskWithJobId taskWithJobId) {
         var task = taskWithJobId.task.getTask();
@@ -85,7 +85,7 @@ public class TaskService {
         if (StringUtils.isEmpty(collection)) {
             throw new RuntimeException("Collection for task " + task + " is empty. This should never happen");
         }
-        var getRemoteDataObjectQuery = queryStore.getQueryWithParameters("getRemoteDataObjectQuery",
+        var getRemoteDataObjectQuery = queryStore.getQueryWithParameters("getRemoteDataObject",
                 Map.of("collection", collection));
         var remoteDataObjects = sparqlClient.executeSelectQueryAsListMap(getRemoteDataObjectQuery,
                 highLoadSparqlEndpoint,
