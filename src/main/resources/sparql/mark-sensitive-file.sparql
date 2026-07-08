@@ -1,4 +1,7 @@
+PREFIX nfo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nfo#>
 PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+PREFIX nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
 
 INSERT {
     GRAPH ?g {
