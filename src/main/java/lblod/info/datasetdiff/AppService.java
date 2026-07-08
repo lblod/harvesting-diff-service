@@ -46,7 +46,7 @@ public class AppService {
                 return;
             }
             var task = taskWithJobId.task();
-            if (Constants.TASK_HARVESTING_DATASET_DIFF.equals(task.getOperation())) {
+            if (Constants.TASK_HARVESTING_DATASET_CLEANUP_SENSITIVE_DATA.equals(task.getOperation())) {
                 var fileContainer = DataContainer.builder().build();
 
                 var graphContainer = DataContainer.builder().build();
