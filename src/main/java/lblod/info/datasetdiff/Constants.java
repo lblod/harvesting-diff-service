@@ -2,6 +2,7 @@ package lblod.info.datasetdiff;
 
 public interface Constants {
     String TASK_HARVESTING_DATASET_DIFF = "http://lblod.data.gift/id/jobs/concept/TaskOperation/diff";
+    String TASK_HARVESTING_DATASET_CLEANUP_SENSITIVE_DATA = "http://lblod.data.gift/id/jobs/concept/TaskOperation/cleanup-sensitive-data";
   
     String SUBJECT_STATUS = "http://www.w3.org/ns/adms#status";
     String STATUS_BUSY = "http://redpencil.data.gift/id/concept/JobStatus/busy";

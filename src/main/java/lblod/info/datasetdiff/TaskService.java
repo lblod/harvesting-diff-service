@@ -60,6 +60,85 @@ public class TaskService {
         return sparqlClient.executeAskQuery(queryStr, highLoadSparqlEndpoint, true);
     }
 
+    public void markFilesAsSensitive(String targetUrl) {
+        var markSensitiveFileQuery = queryStore.getQueryWithParameters("markSensitiveFile", Map.of("derivedFrom", targetUrl));
+        sparqlClient.executeUpdateQuery(markSensitiveFileQuery, highLoadSparqlEndpoint, true);
+
+    }
+    
+    public record DerivedSensitiveData(String derivedUrl, Model aggregate) {}
+    public DerivedSensitiveData fetchModelWithSensitiveData(TaskWithJobId taskWithJobId) {
+        var task = taskWithJobId.task.getTask();
+        var getCollectionForTaskQuery = queryStore.getQueryWithParameters("getCollectionForTask", Map.of("task", task));
+
+        var collections = sparqlClient.executeSelectQueryAsListMap(getCollectionForTaskQuery, highLoadSparqlEndpoint,
+                true);
+
+        if (collections.isEmpty()) {
+            throw new RuntimeException("no collection found for task " + task);
+        }
+
+        var collectionGraph = collections.get(0); // we could check if there's more than one but "in theory" it should
+                                                  // only be one
+        var collection = collectionGraph.get("collection");
+
+        if (StringUtils.isEmpty(collection)) {
+            throw new RuntimeException("Collection for task " + task + " is empty. This should never happen");
+        }
+        var getRemoteDataObjectQuery = queryStore.getQueryWithParameters("getRemoteDataObjectQuery",
+                Map.of("collection", collection));
+        var remoteDataObjects = sparqlClient.executeSelectQueryAsListMap(getRemoteDataObjectQuery,
+                highLoadSparqlEndpoint,
+                true);
+
+        if (remoteDataObjects.isEmpty()) {
+            throw new RuntimeException(
+                    "no remote data object found for task " + task + " and collection " + collection);
+        }
+
+        var remoteDataObjectGraph = remoteDataObjects.get(0); // we could check if there's more than one but "in theory"
+                                                              // it should only be one
+
+        var targetUrl = remoteDataObjectGraph.get("targetUrl");
+
+        if (targetUrl.isEmpty()) {
+            throw new RuntimeException("no target url found for task " + task + " and collection " + collection);
+        }
+
+        var fetchRelatedSensitiveDataFileQuery = queryStore.getQueryWithParameters("fetchRelatedSensitiveDataFile",
+                Map.of("derivedUrl", targetUrl));
+
+        var relatedSensitiveDataFiles = sparqlClient.executeSelectQueryAsListMap(fetchRelatedSensitiveDataFileQuery,
+                highLoadSparqlEndpoint,
+                true);
+        if (relatedSensitiveDataFiles.isEmpty()) {
+            throw new RuntimeException("no related senstive data files for target url" + targetUrl + " and task " + task
+                    + " and collection " + collection);
+        }
+        var models = relatedSensitiveDataFiles.stream()
+                .flatMap(map -> map.values().stream())
+                .peek(path -> log.info("importing {}", path))
+                .map(this::fetchTripleFromFilePath)
+                .peek(m -> log.info("done importing. Triples count: {}", m.size()))
+                .filter(m -> !m.isEmpty())
+                .toList();
+        log.info(
+                "done collecting previous mirrored files. Model count: {}. aggregating...",
+                models.size());
+        var aggregateModel = ModelFactory.createDefaultModel();
+        for (var model : models) {
+            log.info("aggregating model with length {}...", model.size());
+            aggregateModel.add(model);
+            log.info("done aggregating model. current aggregate length: {}",
+                    aggregateModel.size());
+        }
+        
+        if(aggregateModel.isEmpty()) {
+            throw new RuntimeException("no triples found");
+        }
+        return new DerivedSensitiveData(targetUrl, aggregateModel);
+
+    }
     public TaskWithJobId loadTask(String deltaEntry) {
         String queryTask = queryStore.getQuery("loadTask").formatted(deltaEntry);
 

@@ -1,0 +1,17 @@
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+
+INSERT {
+    GRAPH ?g {
+        ?logicalFile ext:flagged "flagged as containing sensitive data".
+        ?physicalFile ext:flagged "flagged as containing sensitive data" .
+    }
+}
+WHERE {
+    GRAPH ?g {
+        ?logicalFile a nfo:FileDataObject ;
+            prov:wasDerivedFrom <${derivedFrom}> .
+        ?physicalFile a nfo:FileDataObject ;
+            nie:dataSource ?logicalFile ;
+            nfo:fileName ?oldPhysicalFileName .
+    }
+}

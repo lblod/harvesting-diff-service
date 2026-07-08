@@ -46,8 +46,33 @@ public class AppService {
                 return;
             }
             var task = taskWithJobId.task();
-
             if (Constants.TASK_HARVESTING_DATASET_DIFF.equals(task.getOperation())) {
+                var fileContainer = DataContainer.builder().build();
+
+                var graphContainer = DataContainer.builder().build();
+                var resultContainer = DataContainer.builder().graphUri(graphContainer.getUri()).build();
+                try {
+                    taskService.updateTaskStatus(task, Constants.STATUS_BUSY);
+
+                    var aggregateModel = taskService.fetchModelWithSensitiveData(taskWithJobId);
+                    var dataRemovalsContainer = fileContainer.toBuilder()
+                            .graphUri(taskService.writeTtlFile(
+                                    task.getGraph(), aggregateModel.aggregate(),
+                                    "to-remove-triples.ttl", aggregateModel.derivedUrl(),
+                                    taskWithJobId.jobId()))
+                            .build();
+                    taskService.markFilesAsSensitive(aggregateModel.derivedUrl());
+                    taskService.appendTaskResultFile(task, dataRemovalsContainer);
+                    taskService.appendTaskResultGraph(task, resultContainer);
+                    taskService.updateTaskStatus(task, Constants.STATUS_SUCCESS);
+                    log.info("Done with success for task {}", task.getId());
+                } catch (Throwable e) {
+                    log.error("Error:", e);
+                    taskService.updateTaskStatus(task, Constants.STATUS_FAILED);
+                    taskService.appendTaskError(task, e.getMessage());
+                }
+            }
+            else if (Constants.TASK_HARVESTING_DATASET_DIFF.equals(task.getOperation())) {
                 try {
 
                     taskService.updateTaskStatus(task, Constants.STATUS_BUSY);

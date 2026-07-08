@@ -1,0 +1,6 @@
+    PREFIX tasks: <http://redpencil.data.gift/vocabularies/tasks/>
+    SELECT ?collection
+    WHERE {
+        <${task}> tasks:inputContainer ?inputContainer.
+        ?inputContainer tasks:hasHarvestingCollection ?collection.
+    }
