@@ -23,10 +23,10 @@ public class AppController {
     public ResponseEntity<Void> delta(@RequestBody List<Delta> deltas,
             HttpServletRequest request) {
         var entries = deltas.stream()
-                .findFirst()
                 .map(delta -> delta.getInsertsFor(Constants.SUBJECT_STATUS,
                         Constants.STATUS_SCHEDULED))
-                .orElseGet(List::of);
+                .flatMap(delta-> delta.stream())
+                .toList();
 
         if (entries.isEmpty()) {
             log.warn(
