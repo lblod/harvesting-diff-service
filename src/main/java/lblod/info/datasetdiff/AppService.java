@@ -68,9 +68,13 @@ public class AppService {
                     for (var i = 0; i <= pagesCount; i++) {
                         var threads = new ArrayList<Thread>();
                         var offset = i * defaultLimitSize;
+                        // importedTriples is array of Remote Data Objects (?derivedFrom)
                         var importedTriples = taskService.fetchTripleFromFileInputContainer(
                                 inputContainer.getGraphUri(), defaultLimitSize, offset);
-                        for (var mdb : importedTriples) {
+                        // mbd = ModelByDerived
+                        // So this loops over every harvested page
+                        // For example, derivedFrom = https://example.org/aalst/decision/1
+                        for (var mbd : importedTriples) {
 
                             threads.add(Thread.startVirtualThread(() -> {
                                 try {
@@ -80,15 +84,15 @@ public class AppService {
                                     semaphore.acquire();
 
                                     var previousCompletedModel = taskService.fetchTripleFromPreviousJobs(task,
-                                            mdb.derivedFrom());
-                                    var newInserts = ModelUtils.difference(mdb.model(), previousCompletedModel);
-                                    var toRemoveOld = ModelUtils.difference(previousCompletedModel, mdb.model());
-                                    var intersection = ModelUtils.intersection(mdb.model(), previousCompletedModel);
+                                            mbd.derivedFrom());
+                                    var newInserts = ModelUtils.difference(mbd.model(), previousCompletedModel);
+                                    var toRemoveOld = ModelUtils.difference(previousCompletedModel, mbd.model());
+                                    var intersection = ModelUtils.intersection(mbd.model(), previousCompletedModel);
                                     if (!newInserts.isEmpty()) {
                                         var dataDiffContainer = fileContainer.toBuilder()
                                                 .graphUri(taskService.writeTtlFile(
                                                         task.getGraph(), newInserts,
-                                                        "new-insert-triples.ttl", mdb.derivedFrom(),
+                                                        "new-insert-triples.ttl", mbd.derivedFrom(),
                                                         taskWithJobId.jobId()))
                                                 .build();
                                         taskService.appendTaskResultFile(task, dataDiffContainer);
@@ -102,7 +106,7 @@ public class AppService {
                                         var dataRemovalsContainer = fileContainer.toBuilder()
                                                 .graphUri(taskService.writeTtlFile(
                                                         task.getGraph(), toRemoveOld,
-                                                        "to-remove-triples.ttl", mdb.derivedFrom(),
+                                                        "to-remove-triples.ttl", mbd.derivedFrom(),
                                                         taskWithJobId.jobId()))
                                                 .build();
                                         taskService.appendTaskResultFile(task, dataRemovalsContainer);
@@ -111,7 +115,7 @@ public class AppService {
                                         var dataIntersectContainer = fileContainer.toBuilder()
                                                 .graphUri(taskService.writeTtlFile(
                                                         task.getGraph(), intersection,
-                                                        "intersect-triples.ttl", mdb.derivedFrom(),
+                                                        "intersect-triples.ttl", mbd.derivedFrom(),
                                                         taskWithJobId.jobId()))
                                                 .build();
                                         taskService.appendTaskResultFile(task, dataIntersectContainer);

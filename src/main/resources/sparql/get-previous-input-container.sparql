@@ -10,6 +10,7 @@ PREFIX dlstatus: <http://lblod.data.gift/file-download-statuses/>
 PREFIX prov: <http://www.w3.org/ns/prov#>
 SELECT DISTINCT ?path  WHERE {
   # we only want to grab the previous jobs where data were published.
+  # targetUrl is the URI of the Remote Data Object attached to the logical file on (one of the) input containers. The Remote Data Object holds the URL of the downloaded page, e.g. http://example.org/aalst/1
   <${targetUrl}> nie:url ?derivedUrl.
   VALUES ?endOperation {
     tasko:publishHarvestedTriples
@@ -29,6 +30,7 @@ SELECT DISTINCT ?path  WHERE {
   ?inputContainer
     task:hasFile ?file .
 
+   # ?derived is a Remote Data Object
    ?file <http://www.w3.org/ns/prov#wasDerivedFrom> ?derived.
    ?derived nie:url ?fromUrl.
 
