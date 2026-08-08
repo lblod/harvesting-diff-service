@@ -6,6 +6,7 @@ PREFIX jobst: <http://redpencil.data.gift/id/concept/JobStatus/>
 PREFIX task: <http://redpencil.data.gift/vocabularies/tasks/>
 PREFIX tasko: <http://lblod.data.gift/id/jobs/concept/TaskOperation/>
 PREFIX dlstatus: <http://lblod.data.gift/file-download-statuses/>
+PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
 
 PREFIX prov: <http://www.w3.org/ns/prov#>
 SELECT DISTINCT ?path  WHERE {
@@ -36,4 +37,5 @@ SELECT DISTINCT ?path  WHERE {
     nie:dataSource ?file .
 
   FILTER (?fromUrl = 	?derivedUrl)
+  FILTER NOT EXISTS {?path ext:flagged ?flagged}
 }
