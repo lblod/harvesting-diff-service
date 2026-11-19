@@ -11,7 +11,7 @@ COPY ./src ./src
 
 RUN mvn package -DskipTests
 
-FROM eclipse-temurin:25-jre
+FROM azul/zulu-openjdk:25-jre
 
 WORKDIR /app
 
